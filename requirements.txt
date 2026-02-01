@@ -85,3 +85,4 @@ lxml>=4.9.0                   # Parser XML veloce (per ebooklib)
 #   - GUI Completa (openwebui_gui.py): richiede PyQt5
 #
 # ============================================================================
+ollama
