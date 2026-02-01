@@ -1,20 +1,33 @@
-# 🚀 Open WebUI + Ollama - Sistema Completo
+# 🚀 Open WebUI Manager - Fork Python Multi-Platform
 
-**Autore:** Carlo | **Versione:** 1.0.0 | **Data:** 2026-01-22
+**Autore:** Paolo Lo Bello alias Wildlux | **Versione:** 1.0.0 | **Data:** 2026-02-02
 
-Sistema completo LLM locali con 11 tools specializzati, concilio multi-modello, italiano nativo, accesso LAN e backup automatico.
-I programmi windows/linux chiamati  BUILD servono a esportare il progetto se fai una modifica.
+**🍴 Fork migliorato di [open-webui/open-webui](https://github.com/open-webui/open-webui)**
+
+Sistema completo LLM locali con 14 tools specializzati, GUI desktop PyQt5/Tkinter per Windows/Linux/macOS, concilio multi-modello, italiano nativo, accesso LAN e backup automatico.
+I programmi windows/linux chiamati BUILD servono a esportare il progetto se fai una modifica.
 ---
 
 ## 🎯 Quick Start
 
+### GUI Desktop (Consigliato)
+```bash
+# Windows
+OpenWebUI.bat                   # Doppio click -> avvia tutto
+
+# Linux/macOS
+./run_gui.sh                    # GUI completa PyQt5
+./run_gui_lite.sh               # GUI leggera Tkinter
+```
+
+### Comando Linea
 ```bash
 ./start.sh                     # Avvia servizi
 ./configure_italian.sh         # Configura italiano
 python3 install_tools.py       # Installa tools
 ```
 
-Apri: `http://localhost:3000`
+Apri: `http://localhost:3000` oppure usa la GUI integrata
 
 📖 **[GUIDA COMPLETA](GUIDA_COMPLETA.md)** - Tutto in un unico documento organizzato
 
@@ -45,10 +58,10 @@ Apri: `http://localhost:3000`
   - Modelli 13B: ~8-10GB ciascuno
 
 ### Software
-- **OS:** Linux (Ubuntu 20.04+, Debian, Fedora, ecc.) oppure Windows con WSL2
-- **Docker:** 20.10+
+- **OS:** Windows 10/11, Linux (Ubuntu 20.04+, Debian, Fedora), macOS 10.15+
+- **Docker:** 20.10+ (Windows/Linux) o native Python fallback
 - **Docker Compose:** 1.29+
-- **Python:** 3.8+ (per script installazione tools)
+- **Python:** 3.8+ (incluso in installer per Windows)
 
 ### Opzionale
 - Chiavetta USB: 32GB+ (per backup completi con modelli)
@@ -71,25 +84,43 @@ sudo usermod -aG docker $USER
 **Windows:**
 Scarica Docker Desktop da: https://www.docker.com/products/docker-desktop
 
-### 2. Clona o Prepara il Progetto
+### 2. Download o Clona il Progetto
 
+**Windows:**
+- Scarica ZIP da: https://github.com/wildlux/OWUIM/releases
+- Estrai in `C:\CARLO\ollama-webui\`
+
+**Linux/macOS:**
 ```bash
-cd ~/Desktop/CARLO/ollama-webui
+git clone https://github.com/wildlux/OWUIM.git ~/ollama-webui
+cd ~/ollama-webui
 ```
 
 ### 3. Avvia i Servizi
 
-**Linux:**
+#### Metodo 1: GUI Desktop (Consigliato)
+**Windows:**
+- Doppio click su `OpenWebUI.bat`
+- Usa la GUI per avviare tutto con un click
+
+**Linux/macOS:**
 ```bash
-./start.sh
+./run_gui.sh          # GUI completa con tutti i controlli
+./run_gui_lite.sh      # GUI leggera solo avvio/arresto
 ```
 
+#### Metodo 2: Comando Linea
 **Windows:**
 ```batch
-start.bat
+start_all.bat
 ```
 
-Oppure manualmente:
+**Linux/macOS:**
+```bash
+./start_all.sh
+```
+
+**Manuale:**
 ```bash
 docker-compose up -d
 ```
@@ -543,17 +574,35 @@ Questo progetto è fornito "as-is" per uso personale ed educativo.
 
 ## 👤 Autore
 
-**Carlo**
-Data: 2026-01-22
+**Paolo Lo Bello alias Wildlux**
+Data: 2026-02-02
 Versione: 1.0.0
+
+---
+
+## 🍴 Informazioni Fork
+
+**Repository Originale:** [open-webui/open-webui](https://github.com/open-webui/open-webui)
+
+**Miglioramenti Principali:**
+- ✅ **GUI Desktop** PyQt5/Tkinter per Windows/Linux/macOS
+- ✅ **14 Tools Specializzati** invece dei base
+- ✅ **Scientific Council** multi-LLM con votazione
+- ✅ **Servizi Locali** per immagini, documenti, TTS
+- ✅ **Installer Windows** (.exe) con auto-venv
+- ✅ **Backup Automatico** su USB/Cloud
+- ✅ **Accesso LAN** configurabile da GUI
+- ✅ **Localizzazione Italiana** completa
+- ✅ **Build Cross-Platform** eseguibili standalone
 
 ---
 
 ## 🙏 Ringraziamenti
 
-- [Open WebUI](https://github.com/open-webui/open-webui) - Interfaccia web fantastica
+- [Open WebUI](https://github.com/open-webui/open-webui) - Base del progetto
 - [Ollama](https://ollama.ai/) - Runtime LLM locale
 - Community open source per i modelli LLM
+- PyQt5, Tkinter, FastAPI per i componenti aggiuntivi
 
 ---
 
