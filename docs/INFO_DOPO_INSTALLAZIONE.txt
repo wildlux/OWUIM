@@ -1,0 +1,52 @@
+====================================================================
+         INSTALLAZIONE COMPLETATA!
+====================================================================
+
+Open WebUI Manager e' stato installato correttamente.
+
+PRIMI PASSI:
+------------
+
+1. Assicurati che Docker Desktop sia avviato
+   (icona nella system tray)
+
+2. Fai doppio click sull'icona "Open WebUI Manager" sul Desktop
+
+3. Il programma avviera' automaticamente:
+   - Docker Desktop (se non attivo)
+   - Ollama
+   - Open WebUI container
+
+4. Si aprira' il browser su http://localhost:3000
+
+5. Crea un account al primo accesso
+
+
+DOWNLOAD MODELLI AI:
+--------------------
+
+Apri un terminale e scarica un modello:
+
+   ollama pull mistral:7b           (consigliato, 7GB)
+   ollama pull llama3:8b            (alternativa, 8GB)
+   ollama pull qwen2.5:7b-instruct  (buono per italiano)
+
+
+PROBLEMI?
+---------
+
+- Docker non parte: Esegui windows\wsl_fix.bat
+- Errori container: Clicca "Ripara" nella GUI
+- Altri problemi: Consulta docs\README.md
+
+
+LINK UTILI:
+-----------
+
+- Open WebUI: http://localhost:3000
+- Ollama API: http://localhost:11434
+- Documentazione: https://docs.openwebui.com
+
+====================================================================
+            Buon utilizzo di Open WebUI Manager!
+====================================================================

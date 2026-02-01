@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Open WebUI Manager
+Comment=Gestione Open WebUI con interfaccia grafica - Sistema AI Locale
+Exec=/home/wildlux/Desktop/CARLO/ollama-webui/run_gui.sh
+Icon=/home/wildlux/Desktop/CARLO/ollama-webui/ICONA/ICONA_Trasparente.png
+Terminal=false
+Categories=Development;Network;Utility;
+Keywords=ollama;ai;chatbot;webui;llm;

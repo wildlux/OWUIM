@@ -1,0 +1,87 @@
+# ============================================================================
+# Open WebUI Manager - Dipendenze Python
+# ============================================================================
+# Installa con: pip install -r requirements.txt
+#
+# Per installare solo le dipendenze base:
+#   pip install -r requirements.txt
+#
+# Per installare tutto (incluse opzionali):
+#   pip install -r requirements.txt -r requirements-optional.txt
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CORE - Dipendenze base per tutti i servizi
+# ----------------------------------------------------------------------------
+fastapi>=0.100.0              # Framework API REST
+uvicorn>=0.22.0               # Server ASGI per FastAPI
+python-multipart>=0.0.6       # Upload file in FastAPI
+requests>=2.28.0              # Client HTTP
+
+# ----------------------------------------------------------------------------
+# GUI Desktop
+# ----------------------------------------------------------------------------
+PyQt5>=5.15.0                 # GUI completa (opzionale, usa Tkinter lite)
+Pillow>=10.0.0                # Elaborazione immagini
+qrcode>=7.0                   # Generazione QR code
+
+# ----------------------------------------------------------------------------
+# TTS Service (porta 5556) - Sintesi vocale
+# ----------------------------------------------------------------------------
+edge-tts>=6.1.0               # Microsoft Edge TTS (voci italiane)
+# gtts>=2.3.0                 # Google TTS (alternativa)
+
+# ----------------------------------------------------------------------------
+# Image Analysis Service (porta 5555)
+# ----------------------------------------------------------------------------
+# Pillow già incluso sopra
+cairosvg>=2.5.0               # Conversione SVG -> PNG
+
+# ----------------------------------------------------------------------------
+# Document Reader Service (porta 5557)
+# ----------------------------------------------------------------------------
+pypdf>=3.0.0                  # Lettura PDF
+python-docx>=0.8.11           # Lettura Word (.docx)
+openpyxl>=3.1.0               # Lettura Excel (.xlsx)
+python-pptx>=0.6.21           # Lettura PowerPoint (.pptx)
+markdown>=3.4.0               # Parsing Markdown
+beautifulsoup4>=4.12.0        # Parsing HTML
+PyYAML>=6.0                   # Parsing YAML
+ebooklib>=0.18                # Lettura EPUB
+lxml>=4.9.0                   # Parser XML veloce (per ebooklib)
+
+# ----------------------------------------------------------------------------
+# OPZIONALI - Installa se necessario
+# ----------------------------------------------------------------------------
+# Scommenta le righe che ti servono:
+
+# OCR (richiede Tesseract installato sul sistema)
+# pytesseract>=0.3.10
+
+# Immagini RAW da fotocamere
+# rawpy>=0.18.0
+# numpy>=1.24.0               # Richiesto da rawpy
+
+# Build eseguibili
+# pyinstaller>=5.0
+
+# ----------------------------------------------------------------------------
+# NOTE IMPORTANTI
+# ----------------------------------------------------------------------------
+#
+# WINDOWS:
+#   - cairosvg richiede GTK3 runtime o usa Inkscape come fallback
+#   - Per .doc/.xls/.ppt installa LibreOffice: winget install TheDocumentFoundation.LibreOffice
+#   - Per .xcf/.psd installa GIMP: winget install GIMP.GIMP
+#   - Per formati RAW installa ImageMagick: winget install ImageMagick.ImageMagick
+#
+# LINUX:
+#   - sudo apt install libreoffice gimp imagemagick calibre
+#   - sudo apt install tesseract-ocr tesseract-ocr-ita  # Per OCR
+#   - sudo apt install libcairo2-dev  # Per cairosvg
+#
+# GUI:
+#   - GUI Lite (openwebui_gui_lite.py): usa solo Tkinter (incluso in Python)
+#   - GUI Completa (openwebui_gui.py): richiede PyQt5
+#
+# ============================================================================

@@ -1,0 +1,9 @@
+# Environment variables
+.env
+
+# Backup files
+*.tar.gz
+*.zip
+
+# Logs
+*.log

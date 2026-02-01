@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools per Open WebUI - Copia e Incolla</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .instructions {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #00d4ff;
+        }
+        .instructions h2 {
+            color: #00d4ff;
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 10px 0;
+        }
+        .tool-card {
+            background: #16213e;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .tool-header {
+            background: #0f3460;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tool-header:hover {
+            background: #1a4a7a;
+        }
+        .tool-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        .tool-desc {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .tool-content {
+            display: none;
+            padding: 20px;
+        }
+        .tool-content.active {
+            display: block;
+        }
+        .copy-btn {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .copy-btn:hover {
+            background: #00a8cc;
+        }
+        .copy-btn.copied {
+            background: #00ff88;
+        }
+        pre {
+            background: #0a0a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        code {
+            color: #00ff88;
+        }
+        .toggle-icon {
+            font-size: 24px;
+            color: #00d4ff;
+        }
+        .functions-list {
+            background: #0a0a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .functions-list h4 {
+            margin: 0 0 10px 0;
+            color: #00d4ff;
+        }
+        .functions-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .functions-list li {
+            color: #aaa;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Tools per Open WebUI</h1>
+    <p class="subtitle">10 strumenti pronti da copiare e incollare</p>
+
+    <div class="instructions">
+        <h2>📋 Come installare i tools</h2>
+        <ol>
+            <li>Apri <a href="http://localhost:3000" target="_blank" style="color: #00d4ff;">http://localhost:3000</a></li>
+            <li>Fai login (o registrati se è la prima volta)</li>
+            <li>Clicca sull'icona ⚙️ <strong>Admin Panel</strong> (in alto a destra)</li>
+            <li>Vai su <strong>Functions</strong> → <strong>Tools</strong></li>
+            <li>Clicca <strong>+ Create new tool</strong></li>
+            <li>Clicca su un tool qui sotto per espanderlo</li>
+            <li>Clicca <strong>📋 Copia Codice</strong></li>
+            <li>Incolla nel campo di testo di Open WebUI</li>
+            <li>Clicca <strong>Save</strong></li>
+            <li>Ripeti per ogni tool che vuoi installare</li>
+        </ol>
+    </div>
+
+    <div id="tools-container"></div>
+
+    <script>
+const tools = [
+{
+    name: "Assistente Testi",
+    desc: "Analizza, correggi e migliora testi",
+    functions: ["analizza_testo", "correggi_grammatica", "genera_schema", "riassumi", "migliora_stile"],
+    code: `"""
+title: Assistente Testi
+author: Carlo
+version: 1.0.0
+description: Strumento per creare, revisionare e migliorare testi
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def analizza_testo(
+        self,
+        testo: str = Field(..., description="Il testo da analizzare"),
+    ) -> str:
+        """
+        Analizza un testo e fornisce statistiche dettagliate.
+        Utile per capire la struttura e complessità di un testo.
+        """
+        parole = testo.split()
+        frasi = testo.replace("!", ".").replace("?", ".").split(".")
+        frasi = [f.strip() for f in frasi if f.strip()]
+        paragrafi = [p.strip() for p in testo.split("\\n\\n") if p.strip()]
+
+        num_parole = len(parole)
+        num_caratteri = len(testo)
+        num_caratteri_no_spazi = len(testo.replace(" ", ""))
+        num_frasi = len(frasi)
+        num_paragrafi = len(paragrafi)
+        media_parole_frase = round(num_parole / max(num_frasi, 1), 1)
+
+        parole_lunghe = [p for p in parole if len(p) > 8]
+
+        return f"""📊 **Analisi del Testo**
+
+**Statistiche generali:**
+- Caratteri (con spazi): {num_caratteri}
+- Caratteri (senza spazi): {num_caratteri_no_spazi}
+- Parole: {num_parole}
+- Frasi: {num_frasi}
+- Paragrafi: {num_paragrafi}
+
+**Leggibilità:**
+- Media parole per frase: {media_parole_frase}
+- Parole lunghe (>8 caratteri): {len(parole_lunghe)}
+
+**Tempo di lettura stimato:** ~{max(1, num_parole // 200)} minuti
+"""
+
+    def correggi_grammatica(
+        self,
+        testo: str = Field(..., description="Il testo da correggere"),
+    ) -> str:
+        """
+        Prepara il testo per la correzione grammaticale.
+        """
+        return f"""📝 **Richiesta di Correzione Grammaticale**
+
+**Testo originale:**
+{testo}
+
+---
+**Istruzioni per la revisione:**
+1. Correggi errori ortografici
+2. Sistema la punteggiatura
+3. Verifica la concordanza soggetto-verbo
+4. Controlla l'uso degli articoli
+5. Migliora la struttura delle frasi se necessario
+
+Per favore analizza il testo sopra e fornisci la versione corretta evidenziando le modifiche."""
+
+    def genera_schema(
+        self,
+        argomento: str = Field(..., description="L'argomento del testo da creare"),
+        tipo: str = Field(default="articolo", description="Tipo di testo: articolo, saggio, relazione, email, lettera"),
+        lunghezza: str = Field(default="media", description="Lunghezza: breve, media, lunga"),
+    ) -> str:
+        """
+        Genera uno schema/outline per scrivere un testo su un argomento specifico.
+        """
+        lunghezze = {
+            "breve": "300-500 parole",
+            "media": "500-1000 parole",
+            "lunga": "1000-2000 parole"
+        }
+
+        return f"""📋 **Schema per {tipo.capitalize()}**
+
+**Argomento:** {argomento}
+**Lunghezza consigliata:** {lunghezze.get(lunghezza, lunghezze['media'])}
+
+---
+**Struttura suggerita:**
+
+1. **Introduzione**
+   - Hook/Apertura accattivante
+   - Presentazione dell'argomento
+   - Tesi o obiettivo principale
+
+2. **Sviluppo**
+   - Punto principale 1
+   - Punto principale 2
+   - Punto principale 3
+   - Esempi e argomentazioni
+
+3. **Conclusione**
+   - Riepilogo dei punti chiave
+   - Riflessione finale
+   - Call to action (se appropriato)
+
+---
+Genera ora il testo completo seguendo questo schema sull'argomento: **{argomento}**"""
+
+    def riassumi(
+        self,
+        testo: str = Field(..., description="Il testo da riassumere"),
+        percentuale: int = Field(default=30, description="Percentuale del testo originale (10-50)"),
+    ) -> str:
+        """
+        Prepara un testo per essere riassunto alla percentuale specificata.
+        """
+        parole_originali = len(testo.split())
+        parole_target = max(20, int(parole_originali * percentuale / 100))
+
+        return f"""📄 **Richiesta di Riassunto**
+
+**Testo originale** ({parole_originali} parole):
+{testo}
+
+---
+**Istruzioni:**
+Riassumi il testo in circa **{parole_target} parole** ({percentuale}% dell'originale).
+Mantieni i concetti chiave e le informazioni essenziali."""
+
+    def migliora_stile(
+        self,
+        testo: str = Field(..., description="Il testo da migliorare"),
+        stile: str = Field(default="formale", description="Stile target: formale, informale, accademico, giornalistico, creativo"),
+    ) -> str:
+        """
+        Richiede il miglioramento dello stile di un testo.
+        """
+        stili_desc = {
+            "formale": "professionale, preciso, rispettoso delle convenzioni",
+            "informale": "colloquiale, amichevole, diretto",
+            "accademico": "rigoroso, con terminologia specifica, citazioni",
+            "giornalistico": "chiaro, conciso, oggettivo, piramide invertita",
+            "creativo": "espressivo, originale, con figure retoriche"
+        }
+
+        return f"""✨ **Richiesta di Miglioramento Stile**
+
+**Stile richiesto:** {stile.capitalize()}
+*({stili_desc.get(stile, stili_desc['formale'])})*
+
+**Testo originale:**
+{testo}
+
+---
+**Istruzioni:**
+Riscrivi il testo nello stile {stile}, mantenendo il significato originale ma adattando:
+- Vocabolario
+- Struttura delle frasi
+- Tono
+- Registro linguistico"""`
+},
+{
+    name: "Assistente Matematica",
+    desc: "Calcoli, equazioni, conversioni e geometria",
+    functions: ["calcola", "risolvi_equazione", "converti_unita", "percentuale", "geometria", "spiega_problema"],
+    code: `"""
+title: Assistente Matematica
+author: Carlo
+version: 1.0.0
+description: Strumento per aiutare con calcoli e problemi matematici
+"""
+
+from pydantic import BaseModel, Field
+from typing import Optional
+import math
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def calcola(
+        self,
+        espressione: str = Field(..., description="L'espressione matematica da calcolare"),
+    ) -> str:
+        """
+        Calcola un'espressione matematica.
+        """
+        try:
+            safe_dict = {
+                "sqrt": math.sqrt, "sin": math.sin, "cos": math.cos,
+                "tan": math.tan, "log": math.log, "log10": math.log10,
+                "exp": math.exp, "abs": abs, "round": round,
+                "pi": math.pi, "e": math.e, "pow": pow,
+            }
+            expr = espressione.replace("^", "**").replace("×", "*").replace("÷", "/")
+            risultato = eval(expr, {"__builtins__": {}}, safe_dict)
+            if isinstance(risultato, float):
+                if risultato == int(risultato):
+                    risultato = int(risultato)
+                else:
+                    risultato = round(risultato, 10)
+            return f"""🔢 **Calcolo**\\n\\n**Espressione:** \\\`{espressione}\\\`\\n**Risultato:** **{risultato}**"""
+        except Exception as e:
+            return f"❌ Errore: {str(e)}"
+
+    def risolvi_equazione(
+        self,
+        equazione: str = Field(..., description="L'equazione da risolvere"),
+    ) -> str:
+        """Prepara un'equazione per la risoluzione passo-passo."""
+        return f"""📐 **Risoluzione Equazione**\\n\\n**Equazione:** \\\`{equazione}\\\`\\n\\nRisolvi mostrando tutti i passaggi."""
+
+    def converti_unita(
+        self,
+        valore: float = Field(..., description="Il valore da convertire"),
+        da: str = Field(..., description="Unità di partenza"),
+        a: str = Field(..., description="Unità di arrivo"),
+    ) -> str:
+        """Converte tra unità di misura."""
+        conversioni = {
+            ("km", "m"): lambda x: x * 1000, ("m", "km"): lambda x: x / 1000,
+            ("kg", "g"): lambda x: x * 1000, ("g", "kg"): lambda x: x / 1000,
+            ("°C", "°F"): lambda x: x * 9/5 + 32, ("°F", "°C"): lambda x: (x - 32) * 5/9,
+        }
+        chiave = (da, a)
+        if chiave in conversioni:
+            risultato = round(conversioni[chiave](valore), 6)
+            return f"🔄 **{valore} {da}** = **{risultato} {a}**"
+        return f"⚠️ Conversione {da} → {a} non disponibile"
+
+    def percentuale(
+        self,
+        operazione: str = Field(..., description="Tipo: calcola, trova, variazione"),
+        valore1: float = Field(..., description="Primo valore"),
+        valore2: float = Field(..., description="Secondo valore"),
+    ) -> str:
+        """Calcoli con percentuali."""
+        if operazione == "calcola":
+            return f"📊 **{valore1}% di {valore2}** = **{round((valore1/100)*valore2, 4)}**"
+        elif operazione == "trova":
+            return f"📊 **{valore1}** è il **{round((valore1/valore2)*100, 2)}%** di **{valore2}**"
+        elif operazione == "variazione":
+            var = ((valore2 - valore1) / valore1) * 100
+            return f"📊 Variazione da {valore1} a {valore2}: **{'+' if var > 0 else ''}{round(var, 2)}%**"
+        return "⚠️ Operazione non riconosciuta"
+
+    def geometria(
+        self,
+        figura: str = Field(..., description="Tipo figura"),
+        misura1: float = Field(..., description="Prima misura"),
+        misura2: float = Field(default=0, description="Seconda misura"),
+    ) -> str:
+        """Calcola area, perimetro, volume."""
+        if figura == "cerchio":
+            return f"📐 **Cerchio** (r={misura1})\\nArea: {round(math.pi * misura1**2, 4)}\\nCirconferenza: {round(2 * math.pi * misura1, 4)}"
+        elif figura == "rettangolo":
+            return f"📐 **Rettangolo** ({misura1}×{misura2})\\nArea: {misura1 * misura2}\\nPerimetro: {2*(misura1+misura2)}"
+        elif figura == "triangolo":
+            return f"📐 **Triangolo** (b={misura1}, h={misura2})\\nArea: {(misura1 * misura2)/2}"
+        return f"⚠️ Figura '{figura}' non supportata"
+
+    def spiega_problema(
+        self,
+        problema: str = Field(..., description="Il problema da risolvere"),
+    ) -> str:
+        """Risolve un problema matematico con spiegazione."""
+        return f"""🎓 **Problema Matematico**\\n\\n{problema}\\n\\n---\\nRisolvi mostrando:\\n1. Comprensione\\n2. Dati\\n3. Strategia\\n4. Svolgimento\\n5. Soluzione\\n6. Verifica"""`
+},
+{
+    name: "Assistente Codice",
+    desc: "Analizza, debugga e spiega codice",
+    functions: ["analizza_codice", "debug_errore", "spiega_codice", "converti_linguaggio", "genera_codice", "genera_test"],
+    code: `"""
+title: Assistente Codice
+author: Carlo
+version: 1.0.0
+description: Strumento per analizzare, debuggare e spiegare codice
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def analizza_codice(
+        self,
+        codice: str = Field(..., description="Il codice da analizzare"),
+        linguaggio: str = Field(default="auto", description="Linguaggio"),
+    ) -> str:
+        """Analizza codice e fornisce revisione."""
+        linee = len(codice.strip().split('\\n'))
+        return f"""🔍 **Analisi Codice** ({linee} linee, {linguaggio})\\n\\n\\\`\\\`\\\`{linguaggio}\\n{codice}\\n\\\`\\\`\\\`\\n\\nAnalizza: correttezza, bug, miglioramenti, sicurezza."""
+
+    def debug_errore(
+        self,
+        codice: str = Field(..., description="Codice con errore"),
+        errore: str = Field(..., description="Messaggio errore"),
+        linguaggio: str = Field(default="auto", description="Linguaggio"),
+    ) -> str:
+        """Debug di un errore."""
+        return f"""🐛 **Debug**\\n\\n**Errore:** \\\`{errore}\\\`\\n\\n\\\`\\\`\\\`{linguaggio}\\n{codice}\\n\\\`\\\`\\\`\\n\\nSpiega errore, causa, soluzione."""
+
+    def spiega_codice(
+        self,
+        codice: str = Field(..., description="Codice da spiegare"),
+        livello: str = Field(default="intermedio", description="Livello"),
+    ) -> str:
+        """Spiega cosa fa il codice."""
+        return f"""📚 **Spiegazione** (livello: {livello})\\n\\n\\\`\\\`\\\`\\n{codice}\\n\\\`\\\`\\\`\\n\\nSpiega: panoramica, linea per linea, concetti, I/O."""
+
+    def converti_linguaggio(
+        self,
+        codice: str = Field(..., description="Codice da convertire"),
+        da: str = Field(..., description="Linguaggio origine"),
+        a: str = Field(..., description="Linguaggio destinazione"),
+    ) -> str:
+        """Converte codice tra linguaggi."""
+        return f"""🔄 **Conversione {da} → {a}**\\n\\n\\\`\\\`\\\`{da}\\n{codice}\\n\\\`\\\`\\\`\\n\\nConverti mantenendo logica e usando convenzioni di {a}."""
+
+    def genera_codice(
+        self,
+        descrizione: str = Field(..., description="Cosa deve fare il codice"),
+        linguaggio: str = Field(default="python", description="Linguaggio"),
+    ) -> str:
+        """Genera codice da descrizione."""
+        return f"""💻 **Genera Codice {linguaggio}**\\n\\n**Richiesta:** {descrizione}\\n\\nGenera codice funzionante con best practices e esempio d'uso."""
+
+    def genera_test(
+        self,
+        codice: str = Field(..., description="Codice da testare"),
+        framework: str = Field(default="pytest", description="Framework test"),
+    ) -> str:
+        """Genera test unitari."""
+        return f"""🧪 **Test per:**\\n\\n\\\`\\\`\\\`\\n{codice}\\n\\\`\\\`\\\`\\n\\nGenera test con {framework}: casi normali, edge cases, errori."""`
+},
+{
+    name: "Assistente Libri",
+    desc: "Analisi libri, personaggi, citazioni",
+    functions: ["analizza_libro", "riassumi_capitolo", "analizza_personaggio", "genera_scheda_libro", "suggerisci_libri"],
+    code: `"""
+title: Assistente Libri
+author: Carlo
+version: 1.0.0
+description: Strumento per analisi e studio di libri
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def analizza_libro(
+        self,
+        titolo: str = Field(..., description="Titolo del libro"),
+        autore: str = Field(default="", description="Autore"),
+    ) -> str:
+        """Analisi completa di un libro."""
+        return f"""📖 **Analisi: {titolo}**{f' di {autore}' if autore else ''}\\n\\nFornisci:\\n1. Info generali e contesto\\n2. Trama (no spoiler)\\n3. Personaggi\\n4. Temi\\n5. Stile narrativo\\n6. Significato"""
+
+    def riassumi_capitolo(
+        self,
+        libro: str = Field(..., description="Titolo libro"),
+        capitolo: str = Field(..., description="Numero capitolo"),
+    ) -> str:
+        """Riassunto di un capitolo."""
+        return f"""📑 **Riassunto**\\n\\n**{libro}** - Capitolo {capitolo}\\n\\nRiassumi: eventi, personaggi, momenti chiave."""
+
+    def analizza_personaggio(
+        self,
+        personaggio: str = Field(..., description="Nome personaggio"),
+        libro: str = Field(..., description="Titolo libro"),
+    ) -> str:
+        """Analisi di un personaggio."""
+        return f"""👤 **{personaggio}** in *{libro}*\\n\\nAnalizza: ruolo, carattere, evoluzione, relazioni, simbolismo."""
+
+    def genera_scheda_libro(
+        self,
+        titolo: str = Field(..., description="Titolo"),
+        scopo: str = Field(default="studio", description="studio/recensione"),
+    ) -> str:
+        """Scheda libro completa."""
+        return f"""📋 **Scheda Libro** ({scopo})\\n\\n**{titolo}**\\n\\nGenera: dati bibliografici, autore, trama, analisi, valutazione, citazioni."""
+
+    def suggerisci_libri(
+        self,
+        genere: str = Field(default="", description="Genere preferito"),
+        libro_piaciuto: str = Field(default="", description="Libro che ti è piaciuto"),
+    ) -> str:
+        """Suggerimenti di lettura."""
+        criteri = []
+        if genere: criteri.append(f"Genere: {genere}")
+        if libro_piaciuto: criteri.append(f"Simile a: {libro_piaciuto}")
+        return f"""📚 **Suggerimenti**\\n\\n{chr(10).join(criteri) if criteri else 'Nessun criterio'}\\n\\nSuggerisci 5-7 libri con descrizione e motivazione."""`
+},
+{
+    name: "Assistente Studio",
+    desc: "Riassunti, flashcard, quiz, mappe mentali",
+    functions: ["crea_riassunto", "genera_flashcard", "spiega_concetto", "prepara_esame", "quiz_verifica"],
+    code: `"""
+title: Assistente Studio
+author: Carlo
+version: 1.0.0
+description: Strumento per studiare e prepararsi agli esami
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def crea_riassunto(
+        self,
+        argomento: str = Field(..., description="Argomento da riassumere"),
+        materia: str = Field(default="", description="Materia"),
+    ) -> str:
+        """Crea riassunto per studio."""
+        return f"""📝 **Riassunto: {argomento}**{f' ({materia})' if materia else ''}\\n\\nCrea: concetti chiave, sviluppo, schema, dati importanti, domande verifica."""
+
+    def genera_flashcard(
+        self,
+        argomento: str = Field(..., description="Argomento"),
+        numero: int = Field(default=10, description="Numero flashcard"),
+    ) -> str:
+        """Genera flashcard."""
+        return f"""🎴 **Flashcard: {argomento}**\\n\\nGenera {numero} flashcard:\\n🔵 Domanda: ...\\n🟢 Risposta: ..."""
+
+    def spiega_concetto(
+        self,
+        concetto: str = Field(..., description="Concetto da spiegare"),
+        livello: str = Field(default="superiori", description="Livello"),
+    ) -> str:
+        """Spiega un concetto."""
+        return f"""💡 **{concetto}** (livello: {livello})\\n\\nSpiega: definizione, dettagli, come funziona, esempi, collegamenti."""
+
+    def prepara_esame(
+        self,
+        materia: str = Field(..., description="Materia"),
+        argomenti: str = Field(..., description="Argomenti"),
+        giorni: int = Field(default=7, description="Giorni disponibili"),
+    ) -> str:
+        """Piano studio per esame."""
+        return f"""📅 **Piano Esame: {materia}**\\n\\nArgomenti: {argomenti}\\nGiorni: {giorni}\\n\\nCrea: calendario, priorità, tecniche, ripasso, simulazione."""
+
+    def quiz_verifica(
+        self,
+        argomento: str = Field(..., description="Argomento"),
+        numero: int = Field(default=10, description="Domande"),
+    ) -> str:
+        """Quiz di verifica."""
+        return f"""❓ **Quiz: {argomento}**\\n\\nGenera {numero} domande miste con risposte e spiegazioni."""`
+},
+{
+    name: "Scrittura Creativa",
+    desc: "Storie, poesie, dialoghi, personaggi",
+    functions: ["genera_storia", "crea_personaggio", "genera_poesia", "genera_dialogo", "sviluppa_trama"],
+    code: `"""
+title: Assistente Scrittura Creativa
+author: Carlo
+version: 1.0.0
+description: Strumento per scrivere storie e contenuti creativi
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def genera_storia(
+        self,
+        genere: str = Field(..., description="Genere: fantasy, horror, romance, thriller, sci-fi"),
+        lunghezza: str = Field(default="breve", description="flash/breve/media/lunga"),
+    ) -> str:
+        """Genera una storia."""
+        return f"""📖 **Storia {genere}** ({lunghezza})\\n\\nScrivi con: hook, personaggi, tensione, climax, conclusione."""
+
+    def crea_personaggio(
+        self,
+        ruolo: str = Field(default="protagonista", description="Ruolo"),
+        genere_storia: str = Field(default="", description="Genere storia"),
+    ) -> str:
+        """Crea un personaggio."""
+        return f"""👤 **Personaggio** ({ruolo})\\n\\nCrea: identità, personalità, background, motivazioni, voce, arco narrativo."""
+
+    def genera_poesia(
+        self,
+        tema: str = Field(..., description="Tema"),
+        stile: str = Field(default="libero", description="libero/sonetto/haiku"),
+    ) -> str:
+        """Genera una poesia."""
+        return f"""🎭 **Poesia: {tema}** (stile: {stile})\\n\\nScrivi con profondità emotiva e immagini evocative."""
+
+    def genera_dialogo(
+        self,
+        situazione: str = Field(..., description="Situazione"),
+        personaggio1: str = Field(default="A", description="Primo personaggio"),
+        personaggio2: str = Field(default="B", description="Secondo personaggio"),
+    ) -> str:
+        """Genera un dialogo."""
+        return f"""💬 **Dialogo: {situazione}**\\n\\nTra {personaggio1} e {personaggio2}\\n\\nScrivi dialogo naturale con sottotesto e didascalie."""
+
+    def sviluppa_trama(
+        self,
+        idea: str = Field(..., description="Idea base"),
+    ) -> str:
+        """Sviluppa una trama."""
+        return f"""📊 **Trama da:** {idea}\\n\\nSviluppa: premessa, personaggi, struttura 3 atti, punti di svolta, sottotrame."""`
+},
+{
+    name: "Assistente Ricerca",
+    desc: "Ricerche, fact-check, analisi",
+    functions: ["ricerca_argomento", "confronta_opzioni", "analizza_problema", "fact_check", "spiega_come"],
+    code: `"""
+title: Assistente Ricerca
+author: Carlo
+version: 1.0.0
+description: Strumento per ricerche e analisi
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def ricerca_argomento(
+        self,
+        argomento: str = Field(..., description="Argomento"),
+        profondita: str = Field(default="media", description="panoramica/media/approfondita"),
+    ) -> str:
+        """Ricerca su un argomento."""
+        return f"""🔍 **Ricerca: {argomento}** ({profondita})\\n\\nFornisci: definizione, storia, aspetti principali, stato attuale, prospettive, controversie."""
+
+    def confronta_opzioni(
+        self,
+        opzione1: str = Field(..., description="Prima opzione"),
+        opzione2: str = Field(..., description="Seconda opzione"),
+    ) -> str:
+        """Confronta opzioni."""
+        return f"""⚖️ **Confronto**\\n\\n{opzione1} vs {opzione2}\\n\\nAnalizza: panoramica, pro/contro, casi d'uso, raccomandazione."""
+
+    def analizza_problema(
+        self,
+        problema: str = Field(..., description="Problema"),
+    ) -> str:
+        """Analizza un problema."""
+        return f"""🎯 **Analisi: {problema}**\\n\\nFornisci: definizione, cause, stakeholder, vincoli, soluzioni, raccomandazione."""
+
+    def fact_check(
+        self,
+        affermazione: str = Field(..., description="Affermazione da verificare"),
+    ) -> str:
+        """Verifica un'affermazione."""
+        return f"""✓ **Fact Check**\\n\\n"{affermazione}"\\n\\nVerifica: ✅ VERO / ⚠️ PARZIALE / ❌ FALSO\\nCon evidenze e fonti."""
+
+    def spiega_come(
+        self,
+        cosa: str = Field(..., description="Cosa imparare a fare"),
+    ) -> str:
+        """Guida passo-passo."""
+        return f"""📖 **Come: {cosa}**\\n\\nFornisci: prerequisiti, materiali, procedura passo-passo, consigli, troubleshooting."""`
+},
+{
+    name: "Pubblicazione Libri",
+    desc: "Revisione capitoli, formule, teoremi per libri scientifici",
+    functions: ["revisiona_capitolo", "verifica_formula", "crea_struttura_libro", "genera_esercizi", "scrivi_teorema"],
+    code: `"""
+title: Assistente Pubblicazione Libri
+author: Carlo
+version: 1.0.0
+description: Strumento per scrivere e pubblicare libri scientifici
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def revisiona_capitolo(
+        self,
+        testo: str = Field(..., description="Testo da revisionare"),
+        tipo_revisione: str = Field(default="completa", description="completa/grammaticale/scientifica"),
+    ) -> str:
+        """Revisiona capitolo scientifico."""
+        return f"""📝 **Revisione {tipo_revisione}**\\n\\n{testo[:500]}...\\n\\nVerifica: correttezza scientifica, chiarezza, linguaggio tecnico, grammatica, struttura."""
+
+    def verifica_formula(
+        self,
+        formula: str = Field(..., description="Formula in LaTeX"),
+        contesto: str = Field(default="", description="Contesto"),
+    ) -> str:
+        """Verifica formula matematica."""
+        return f"""🔢 **Verifica Formula**\\n\\n\\\`{formula}\\\`\\n{f'Contesto: {contesto}' if contesto else ''}\\n\\nVerifica: sintassi LaTeX, correttezza matematica, notazione standard."""
+
+    def crea_struttura_libro(
+        self,
+        titolo: str = Field(..., description="Titolo"),
+        argomento: str = Field(..., description="Argomento"),
+        num_capitoli: int = Field(default=10, description="Numero capitoli"),
+    ) -> str:
+        """Crea struttura libro."""
+        return f"""📚 **Struttura: {titolo}**\\n\\nArgomento: {argomento}\\nCapitoli: ~{num_capitoli}\\n\\nGenera: frontmatter, capitoli dettagliati, backmatter."""
+
+    def genera_esercizi(
+        self,
+        argomento: str = Field(..., description="Argomento"),
+        numero: int = Field(default=10, description="Numero esercizi"),
+        con_soluzioni: bool = Field(default=True, description="Con soluzioni"),
+    ) -> str:
+        """Genera esercizi matematici."""
+        return f"""✏️ **Esercizi: {argomento}**\\n\\nGenera {numero} esercizi (base/intermedi/avanzati) {'con' if con_soluzioni else 'senza'} soluzioni."""
+
+    def scrivi_teorema(
+        self,
+        enunciato: str = Field(..., description="Enunciato teorema"),
+        con_dimostrazione: bool = Field(default=True, description="Con dimostrazione"),
+    ) -> str:
+        """Formalizza un teorema."""
+        return f"""📜 **Teorema**\\n\\n{enunciato}\\n\\nFormalizza: enunciato preciso, {'dimostrazione, ' if con_dimostrazione else ''}corollari, esempi."""`
+},
+{
+    name: "Assistente Produttività",
+    desc: "Progetti, todo, email, riunioni",
+    functions: ["crea_piano_progetto", "genera_todo_list", "scrivi_email", "prepara_riunione", "brainstorming"],
+    code: `"""
+title: Assistente Produttività
+author: Carlo
+version: 1.0.0
+description: Strumento per gestire progetti e aumentare produttività
+"""
+
+from pydantic import BaseModel, Field
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def crea_piano_progetto(
+        self,
+        progetto: str = Field(..., description="Nome progetto"),
+        obiettivo: str = Field(..., description="Obiettivo"),
+    ) -> str:
+        """Piano progetto."""
+        return f"""📋 **Piano: {progetto}**\\n\\nObiettivo: {obiettivo}\\n\\nCrea: fasi, task, risorse, timeline, rischi, metriche."""
+
+    def genera_todo_list(
+        self,
+        contesto: str = Field(..., description="Contesto"),
+    ) -> str:
+        """Lista todo organizzata."""
+        return f"""✅ **Todo: {contesto}**\\n\\nGenera lista con priorità (🔴🟡🟢), tempo stimato, dipendenze."""
+
+    def scrivi_email(
+        self,
+        scopo: str = Field(..., description="Scopo email"),
+        tono: str = Field(default="professionale", description="Tono"),
+    ) -> str:
+        """Bozza email."""
+        return f"""📧 **Email** ({tono})\\n\\nScopo: {scopo}\\n\\nGenera: oggetto, corpo strutturato, call to action."""
+
+    def prepara_riunione(
+        self,
+        argomento: str = Field(..., description="Argomento"),
+        durata: int = Field(default=60, description="Durata minuti"),
+    ) -> str:
+        """Prepara riunione."""
+        return f"""📅 **Riunione: {argomento}** ({durata} min)\\n\\nGenera: agenda, obiettivi, materiali, template verbale."""
+
+    def brainstorming(
+        self,
+        tema: str = Field(..., description="Tema"),
+        num_idee: int = Field(default=10, description="Numero idee"),
+    ) -> str:
+        """Sessione brainstorming."""
+        return f"""💡 **Brainstorming: {tema}**\\n\\nGenera almeno {num_idee} idee, categorizza, identifica top 3."""`
+},
+{
+    name: "Finanza Italiana",
+    desc: "IRPEF, mutui, P.IVA, pensioni, investimenti",
+    functions: ["calcola_tasse_irpef", "analizza_investimento", "calcola_mutuo", "calcola_pensione", "analizza_p_iva"],
+    code: `"""
+title: Assistente Finanza Italiana
+author: Carlo
+version: 1.0.0
+description: Consulenza finanziaria e fiscale italiana
+"""
+
+from pydantic import BaseModel, Field
+import math
+
+
+class Tools:
+    def __init__(self):
+        pass
+
+    def calcola_tasse_irpef(
+        self,
+        reddito_annuo: float = Field(..., description="Reddito annuo lordo"),
+        detrazioni: float = Field(default=0, description="Detrazioni"),
+    ) -> str:
+        """Calcola IRPEF."""
+        reddito = max(0, reddito_annuo - detrazioni)
+        if reddito <= 28000:
+            irpef = reddito * 0.23
+        elif reddito <= 50000:
+            irpef = 6440 + (reddito - 28000) * 0.35
+        else:
+            irpef = 14140 + (reddito - 50000) * 0.43
+        return f"""💰 **IRPEF**\\n\\nReddito: €{reddito_annuo:,.2f}\\nImponibile: €{reddito:,.2f}\\n**IRPEF:** €{irpef:,.2f}\\n**Netto:** €{reddito_annuo - irpef:,.2f}"""
+
+    def analizza_investimento(
+        self,
+        capitale: float = Field(..., description="Capitale"),
+        rendimento: float = Field(default=5, description="Rendimento % annuo"),
+        anni: int = Field(default=10, description="Anni"),
+    ) -> str:
+        """Analisi investimento."""
+        montante = capitale * (1 + rendimento/100) ** anni
+        guadagno = montante - capitale
+        tasse = guadagno * 0.26
+        return f"""📈 **Investimento**\\n\\nCapitale: €{capitale:,.2f}\\nRendimento: {rendimento}%\\nAnni: {anni}\\n\\nMontante: €{montante:,.2f}\\nGuadagno lordo: €{guadagno:,.2f}\\nTasse (26%): €{tasse:,.2f}\\n**Netto:** €{montante - tasse:,.2f}"""
+
+    def calcola_mutuo(
+        self,
+        importo: float = Field(..., description="Importo mutuo"),
+        tasso: float = Field(..., description="Tasso % annuo"),
+        anni: int = Field(default=20, description="Durata anni"),
+    ) -> str:
+        """Calcola rata mutuo."""
+        n = anni * 12
+        r = tasso / 100 / 12
+        rata = importo * (r * (1+r)**n) / ((1+r)**n - 1) if r > 0 else importo/n
+        totale = rata * n
+        return f"""🏠 **Mutuo**\\n\\nImporto: €{importo:,.2f}\\nTasso: {tasso}%\\nDurata: {anni} anni\\n\\n**Rata:** €{rata:,.2f}/mese\\nTotale interessi: €{totale - importo:,.2f}"""
+
+    def calcola_pensione(
+        self,
+        eta: int = Field(..., description="Età attuale"),
+        reddito: float = Field(..., description="Reddito annuo"),
+        anni_contributi: int = Field(..., description="Anni contributi"),
+    ) -> str:
+        """Stima pensione."""
+        anni_mancanti = max(0, 67 - eta)
+        totale_anni = anni_contributi + anni_mancanti
+        montante = reddito * 0.33 * totale_anni
+        pensione = montante * 0.057
+        return f"""👴 **Pensione**\\n\\nEtà: {eta}\\nReddito: €{reddito:,.2f}\\nContributi: {anni_contributi} anni\\n\\nPensione età 67: ~€{pensione/12:,.2f}/mese\\nTasso sostituzione: {pensione/reddito*100:.1f}%"""
+
+    def analizza_p_iva(
+        self,
+        fatturato: float = Field(..., description="Fatturato annuo"),
+        regime: str = Field(default="forfettario", description="forfettario/ordinario"),
+    ) -> str:
+        """Analisi P.IVA."""
+        if regime == "forfettario":
+            imponibile = fatturato * 0.78
+            imposta = imponibile * 0.15
+            inps = imponibile * 0.26
+        else:
+            imponibile = fatturato * 0.7
+            imposta = imponibile * 0.30
+            inps = imponibile * 0.26
+        netto = fatturato - imposta - inps
+        return f"""💼 **P.IVA {regime}**\\n\\nFatturato: €{fatturato:,.2f}\\nImponibile: €{imponibile:,.2f}\\nImposta: €{imposta:,.2f}\\nINPS: €{inps:,.2f}\\n**Netto:** €{netto:,.2f} (€{netto/12:,.2f}/mese)"""`
+}
+];
+
+        const container = document.getElementById('tools-container');
+
+        tools.forEach((tool, index) => {
+            const card = document.createElement('div');
+            card.className = 'tool-card';
+            card.innerHTML = \`
+                <div class="tool-header" onclick="toggleTool(\${index})">
+                    <div>
+                        <div class="tool-title">\${tool.name}</div>
+                        <div class="tool-desc">\${tool.desc}</div>
+                    </div>
+                    <span class="toggle-icon" id="icon-\${index}">▼</span>
+                </div>
+                <div class="tool-content" id="content-\${index}">
+                    <div class="functions-list">
+                        <h4>Funzioni incluse:</h4>
+                        <ul>
+                            \${tool.functions.map(f => \`<li>\${f}()</li>\`).join('')}
+                        </ul>
+                    </div>
+                    <button class="copy-btn" onclick="copyCode(\${index})">📋 Copia Codice</button>
+                    <pre><code id="code-\${index}">\${escapeHtml(tool.code)}</code></pre>
+                </div>
+            \`;
+            container.appendChild(card);
+        });
+
+        function toggleTool(index) {
+            const content = document.getElementById(\`content-\${index}\`);
+            const icon = document.getElementById(\`icon-\${index}\`);
+            content.classList.toggle('active');
+            icon.textContent = content.classList.contains('active') ? '▲' : '▼';
+        }
+
+        function copyCode(index) {
+            const code = tools[index].code;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                btn.textContent = '✅ Copiato!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copia Codice';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+====================================================================
+         OPEN WEBUI MANAGER - Requisiti di Sistema
+====================================================================
+
+Prima di installare, assicurati di avere:
+
+1. DOCKER DESKTOP
+   - Scarica da: https://docker.com/products/docker-desktop
+   - Richiede WSL2 su Windows 10/11
+   - Dopo l'installazione, avvia Docker Desktop almeno una volta
+
+2. OLLAMA
+   - Scarica da: https://ollama.com/download/windows
+   - Installa e avvia almeno una volta
+   - Consigliato: scarica un modello con "ollama pull mistral:7b"
+
+3. REQUISITI MINIMI
+   - Windows 10/11 (64-bit)
+   - 8 GB RAM (16 GB consigliati)
+   - 10 GB spazio disco
+   - Connessione internet (per download modelli)
+
+====================================================================
+         NOTA IMPORTANTE
+====================================================================
+
+Open WebUI Manager e' un'interfaccia grafica per gestire:
+- Open WebUI (interfaccia chat AI)
+- Ollama (modelli AI locali)
+- Container Docker
+
+Il programma NON include Docker o Ollama, devi installarli
+separatamente prima di usare Open WebUI Manager.
+
+====================================================================

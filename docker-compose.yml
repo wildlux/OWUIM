@@ -1,0 +1,51 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - WEBUI_SECRET_KEY=your-secret-key-change-this
+      - DEFAULT_LOCALE=it-IT
+      - WEBUI_NAME=Open WebUI
+      - DEFAULT_MODELS=
+      - ENABLE_SIGNUP=true
+      - AUDIO_STT_ENGINE=openai
+      - AUDIO_STT_MODEL=whisper-1
+      - WHISPER_MODEL=base
+      - AUDIO_STT_LANGUAGE=it
+      # TTS locale con OpenedAI Speech (Piper)
+      - AUDIO_TTS_ENGINE=openai
+      - AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5556/v1
+      - AUDIO_TTS_OPENAI_API_KEY=sk-local
+      - AUDIO_TTS_MODEL=tts-1
+      - AUDIO_TTS_VOICE=paola
+      # Servizi locali esterni
+      - IMAGE_SERVICE_URL=http://host.docker.internal:5555
+      - DOCUMENT_SERVICE_URL=http://host.docker.internal:5557
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open_webui_data:/app/backend/data
+    restart: unless-stopped
+    depends_on:
+      - openedai-speech
+
+  openedai-speech:
+    image: ghcr.io/matatonic/openedai-speech
+    container_name: openedai-speech
+    ports:
+      - "8000:8000"
+    volumes:
+      - openedai_speech_data:/app/voices
+      - openedai_speech_config:/app/config
+    environment:
+      - TTS_HOME=/app/voices
+      - HF_HOME=/app/voices
+    restart: unless-stopped
+
+volumes:
+  open_webui_data:
+  openedai_speech_data:
+  openedai_speech_config:
