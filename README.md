@@ -545,8 +545,7 @@ Poi accedi da: `https://192.168.1.X` (accetta certificato self-signed)
 - [ ] Export conversazioni in PDF/Markdown
 
 #### Sicurezza
-- [ ] Autenticazione a due fattori (2FA)
-- [ ] HTTPS con certificati self-signed
+- [ ] HTTPS con certificati self-signed (accesso LAN)
 - [ ] Rate limiting per API
 - [ ] Audit log accessi
 
