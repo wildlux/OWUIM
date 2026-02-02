@@ -32,7 +32,8 @@ from PyQt5.QtWidgets import (
     QComboBox, QLineEdit, QMessageBox, QProgressBar, QFrame, QSplitter,
     QListWidget, QListWidgetItem, QSystemTrayIcon, QMenu, QAction,
     QStatusBar, QToolBar, QSizePolicy, QScrollArea, QDialog, QSplashScreen,
-    QTreeView, QFileDialog, QHeaderView, QAbstractItemView, QCheckBox
+    QTreeView, QFileDialog, QHeaderView, QAbstractItemView, QCheckBox,
+    QTableWidget, QTableWidgetItem
 )
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QSize, QByteArray, QBuffer, QUrl, QDir, QFileInfo, QSettings, QModelIndex
 from PyQt5.QtGui import QIcon, QFont, QPalette, QColor, QPixmap, QImage, QDesktopServices
@@ -541,20 +542,50 @@ class DashboardWidget(QWidget):
         layout.addWidget(actions_group)
 
         # Info
-        info_group = QGroupBox("Informazioni")
-        info_group.setFont(QFont("Arial", 12, QFont.Bold))
+        info_group = QGroupBox("Dettagli e links locali del tuo Computer")
+        info_group.setFont(QFont("Arial", 11, QFont.Bold))
         info_layout = QVBoxLayout(info_group)
+        info_layout.setSpacing(6)
 
         info_text = QLabel(
             "🌐 Open WebUI: <a href='http://localhost:3000'>http://localhost:3000</a><br>"
             "🤖 Ollama API: <a href='http://localhost:11434'>http://localhost:11434</a><br>"
             "🔊 TTS API: <a href='http://localhost:8000'>http://localhost:8000</a><br>"
-            f"📁 Directory: {SCRIPT_DIR}"
+            f"📁 Directory: {SCRIPT_DIR}<br><br>"
+            "📁 <b>Archivio:</b> Gestisci file locali da usare come Knowledge Base in Open WebUI<br>"
+            "🔊 <b>Voce:</b> Sintesi vocale italiana offline con Piper TTS"
         )
         info_text.setOpenExternalLinks(True)
-        info_text.setFont(QFont("Arial", 11))
+        info_text.setFont(QFont("Arial", 10))
         info_text.setWordWrap(True)
         info_layout.addWidget(info_text)
+
+        # Nota cellulare + link configurazione
+        mobile_row = QHBoxLayout()
+        mobile_row.setSpacing(8)
+        mobile_label = QLabel("📱 <i>Puoi usare Open WebUI anche da iPhone e Android!</i>")
+        mobile_label.setStyleSheet("font-size: 10px; color: #27ae60;")
+        mobile_row.addWidget(mobile_label)
+        mobile_row.addStretch()
+
+        config_link = QPushButton("👉 Clicca per mostrare il menù")
+        config_link.setStyleSheet("""
+            QPushButton {
+                background: none;
+                border: none;
+                color: #3498db;
+                font-size: 10px;
+                text-decoration: underline;
+            }
+            QPushButton:hover {
+                color: #2980b9;
+            }
+        """)
+        config_link.setCursor(Qt.PointingHandCursor)
+        config_link.clicked.connect(lambda: self.main_window.tabs.setCurrentIndex(5))  # Tab Configurazione
+        mobile_row.addWidget(config_link)
+
+        info_layout.addLayout(mobile_row)
         layout.addWidget(info_group)
 
         layout.addStretch()
@@ -666,78 +697,196 @@ class ModelsWidget(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        title = QLabel("Gestione Modelli")
-        title.setFont(QFont("Arial", 24, QFont.Bold))
-        title.setStyleSheet("color: #2c3e50;")
-        layout.addWidget(title)
+        # Layout a due colonne
+        columns = QHBoxLayout()
+        columns.setSpacing(12)
 
-        # Lista modelli
+        # === COLONNA SINISTRA: Modelli Installati ===
+        left_col = QVBoxLayout()
+        left_col.setSpacing(8)
+
         models_group = QGroupBox("Modelli Installati")
-        models_group.setFont(QFont("Arial", 12, QFont.Bold))
         models_layout = QVBoxLayout(models_group)
+        models_layout.setContentsMargins(10, 12, 10, 10)
 
         self.models_list = QListWidget()
-        self.models_list.setFont(QFont("Monospace", 11))
-        self.models_list.setMinimumHeight(200)
+        self.models_list.setFont(QFont("Monospace", 10))
+        self.models_list.setStyleSheet("QListWidget::item { padding: 4px; }")
         models_layout.addWidget(self.models_list)
 
         btn_refresh = ModernButton("🔄 Aggiorna Lista", "blue")
         btn_refresh.clicked.connect(self.refresh_models)
         models_layout.addWidget(btn_refresh)
 
-        layout.addWidget(models_group)
+        left_col.addWidget(models_group)
+        columns.addLayout(left_col, 1)
 
-        # Download modello
-        download_group = QGroupBox("Scarica Nuovo Modello")
-        download_group.setFont(QFont("Arial", 12, QFont.Bold))
-        download_layout = QVBoxLayout(download_group)
+        # === COLONNA DESTRA: Modelli Consigliati + Azioni ===
+        right_col = QVBoxLayout()
+        right_col.setSpacing(8)
 
-        info_label = QLabel("Modelli consigliati per italiano:")
-        info_label.setFont(QFont("Arial", 10))
-        download_layout.addWidget(info_label)
+        recommend_group = QGroupBox("Modelli Consigliati")
+        recommend_layout = QVBoxLayout(recommend_group)
+        recommend_layout.setContentsMargins(10, 12, 10, 10)
+        recommend_layout.setSpacing(6)
 
+        # Tabella capacità modelli
+        # Colonne: Quotid., Generale, Coding, Vision, Math, Sentiment, Scrittura, Traduzioni, Ragionam., Agenti, Robotica
+        capabilities = ["📅", "🤖", "💻", "👁️", "🔢", "💌", "✍️", "🌍", "🧠", "🤝", "⚙️"]
+        cap_tooltips = ["Quotidiano", "Generale", "Coding", "Vision", "Matematica", "Sentiment", "Scrittura", "Traduzioni", "Ragionamento", "Agenti", "Robotica"]
+
+        # Modelli con le loro capacità (True = buono, False = non adatto)
+        # Ordine: Quotid, Generale, Coding, Vision, Math, Sentiment, Scrittura, Traduzioni, Ragionam, Agenti, Robotica
+        models_data = {
+            "llama3.1:8b":        [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "llama3.1:70b":       [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "mistral:7b":         [True,  True,  True,  False, False, True,  True,  True,  False, True,  True],
+            "mixtral:8x7b":       [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "qwen2.5:7b":         [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "qwen2.5:14b":        [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "gemma2:9b":          [True,  True,  True,  False, False, True,  True,  True,  False, False, True],
+            "gemma2:27b":         [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "phi3:medium":        [True,  True,  True,  False, True,  False, True,  False, True,  False, True],
+            "yi:9b":              [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "yi:34b":             [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "deepseek-coder:6.7b":[False, False, True,  False, True,  False, False, False, False, False, False],
+            "deepseek-coder:33b": [False, False, True,  False, True,  False, False, False, True,  False, False],
+            "codellama:7b":       [False, False, True,  False, False, False, False, False, False, False, False],
+            "codellama:13b":      [False, False, True,  False, False, False, False, False, False, False, False],
+            "qwen2.5-coder:7b":   [False, False, True,  False, True,  False, False, False, False, True,  True],
+            "codegemma:7b":       [False, False, True,  False, False, False, False, False, False, False, False],
+            "starcoder2:7b":      [False, False, True,  False, False, False, False, False, False, False, False],
+            "llava:7b":           [True,  True,  False, True,  False, True,  True,  False, False, False, False],
+            "llava:13b":          [True,  True,  False, True,  False, True,  True,  False, True,  False, False],
+            "llava:34b":          [True,  True,  False, True,  True,  True,  True,  False, True,  False, False],
+            "bakllava:7b":        [True,  False, False, True,  False, True,  True,  False, False, False, False],
+            "moondream:1.8b":     [False, False, False, True,  False, False, False, False, False, False, False],
+            "deepseek-math:7b":   [False, False, False, False, True,  False, False, False, True,  False, False],
+            "mathstral:7b":       [False, False, False, False, True,  False, False, False, True,  False, False],
+            "wizard-math:7b":     [False, False, False, False, True,  False, False, False, True,  False, False],
+            "stablelm2:1.6b":     [False, False, False, False, False, True,  False, False, False, False, False],
+            "tinyllama:1.1b":     [False, False, False, False, False, True,  False, False, False, False, False],
+            "aya:8b":             [True,  True,  False, False, False, False, True,  True,  False, False, False],
+            "nous-hermes2:10.7b": [True,  True,  True,  False, False, True,  True,  True,  True,  True,  True],
+            "openhermes:7b":      [True,  True,  True,  False, False, True,  True,  False, False, True,  False],
+            "dolphin-mistral:7b": [True,  True,  True,  False, False, True,  True,  False, False, True,  False],
+            "wizardlm2:7b":       [True,  True,  True,  False, False, True,  True,  False, True,  True,  False],
+            "zephyr:7b":          [True,  True,  False, False, False, True,  True,  False, False, False, False],
+            "internlm2:7b":       [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "glm4:9b":            [True,  True,  True,  False, True,  True,  True,  True,  True,  True,  True],
+            "deepseek-llm:7b":    [True,  True,  True,  False, False, True,  True,  False, True,  True,  True],
+        }
+
+        self.cap_table = QTableWidget(len(models_data), len(capabilities) + 1)
+        self.cap_table.setHorizontalHeaderLabels(["Modello"] + capabilities)
+        self.cap_table.horizontalHeader().setDefaultSectionSize(28)
+        self.cap_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.cap_table.verticalHeader().setVisible(False)
+        self.cap_table.setSelectionMode(QTableWidget.NoSelection)
+        self.cap_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.cap_table.setStyleSheet("""
+            QTableWidget { font-size: 10px; gridline-color: #ddd; }
+            QHeaderView::section { font-size: 10px; padding: 2px; }
+        """)
+
+        # Imposta tooltip per header
+        for i, tip in enumerate(cap_tooltips):
+            self.cap_table.horizontalHeaderItem(i + 1).setToolTip(tip)
+
+        row = 0
+        for model, caps in models_data.items():
+            # Nome modello cliccabile
+            model_btn = QPushButton(model)
+            model_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 9px; text-align: left; padding: 2px 4px;
+                    background: transparent; border: none; color: #2980b9;
+                }
+                QPushButton:hover { text-decoration: underline; background: #ecf0f1; }
+            """)
+            model_btn.setCursor(Qt.PointingHandCursor)
+            model_btn.setToolTip(f"Clicca per scaricare {model}")
+            model_btn.clicked.connect(lambda checked, m=model: self.quick_download(m))
+            self.cap_table.setCellWidget(row, 0, model_btn)
+
+            # Spunte capacità
+            for col, capable in enumerate(caps):
+                item = QTableWidgetItem("✓" if capable else "✗")
+                item.setTextAlignment(Qt.AlignCenter)
+                item.setForeground(QColor("#27ae60") if capable else QColor("#e74c3c"))
+                self.cap_table.setItem(row, col + 1, item)
+
+            self.cap_table.setRowHeight(row, 24)
+            row += 1
+
+        recommend_layout.addWidget(self.cap_table)
+
+        # Note e links
+        note_label = QLabel("<i>💡 Clicca sul nome del modello per scaricarlo · Legenda: 📅Quotidiano 💻Coding 👁️Vision 🔢Math 💌Sentiment ✍️Scrittura 🌍Traduzioni</i>")
+        note_label.setStyleSheet("font-size: 8px; color: #7f8c8d;")
+        note_label.setWordWrap(True)
+        recommend_layout.addWidget(note_label)
+
+        links_label = QLabel(
+            "<i>🌐 Per modelli più aggiornati: "
+            "<a href='https://ollama.com/library'>ollama.com</a> · "
+            "<a href='https://huggingface.co/models'>huggingface.co</a> · "
+            "<a href='https://kaggle.com/models'>kaggle.com</a></i>"
+        )
+        links_label.setOpenExternalLinks(True)
+        links_label.setStyleSheet("font-size: 9px; color: #7f8c8d;")
+        recommend_layout.addWidget(links_label)
+
+        # Separator
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setStyleSheet("background-color: #ddd;")
+        recommend_layout.addWidget(sep)
+
+        # === AZIONI (dentro Modelli Consigliati) ===
+        actions_label = QLabel("<b>Azioni Manuali</b>")
+        actions_label.setStyleSheet("font-size: 10px; color: #2980b9;")
+        recommend_layout.addWidget(actions_label)
+
+        # Download manuale
+        download_row = QHBoxLayout()
+        download_row.setSpacing(6)
         self.model_combo = QComboBox()
-        self.model_combo.setFont(QFont("Arial", 11))
-        self.model_combo.addItems([
-            "mistral:7b-instruct",
-            "qwen2.5:7b-instruct",
-            "llama3:8b",
-            "gemma2:9b",
-            "codellama:7b",
-            "phi3:medium",
-        ])
+        self.model_combo.setFont(QFont("Arial", 10))
         self.model_combo.setEditable(True)
-        download_layout.addWidget(self.model_combo)
-
-        btn_download = ModernButton("⬇️ Scarica Modello", "green")
+        self.model_combo.setPlaceholderText("Scrivi nome modello...")
+        download_row.addWidget(self.model_combo, 1)
+        btn_download = ModernButton("⬇️ Scarica", "green")
         btn_download.clicked.connect(self.download_model)
-        download_layout.addWidget(btn_download)
+        download_row.addWidget(btn_download)
+        recommend_layout.addLayout(download_row)
 
-        layout.addWidget(download_group)
-
-        # Rimuovi modello
-        remove_group = QGroupBox("Rimuovi Modello")
-        remove_group.setFont(QFont("Arial", 12, QFont.Bold))
-        remove_layout = QHBoxLayout(remove_group)
-
-        self.remove_input = QLineEdit()
-        self.remove_input.setPlaceholderText("Nome modello da rimuovere...")
-        self.remove_input.setFont(QFont("Arial", 11))
-        remove_layout.addWidget(self.remove_input)
-
+        # Rimuovi (combobox con modelli installati)
+        remove_row = QHBoxLayout()
+        remove_row.setSpacing(6)
+        self.remove_combo = QComboBox()
+        self.remove_combo.setFont(QFont("Arial", 10))
+        self.remove_combo.setPlaceholderText("Seleziona modello da rimuovere...")
+        remove_row.addWidget(self.remove_combo, 1)
         btn_remove = ModernButton("🗑️ Rimuovi", "red")
         btn_remove.clicked.connect(self.remove_model)
-        remove_layout.addWidget(btn_remove)
+        remove_row.addWidget(btn_remove)
+        recommend_layout.addLayout(remove_row)
 
-        layout.addWidget(remove_group)
-        layout.addStretch()
+        right_col.addWidget(recommend_group)
+        columns.addLayout(right_col, 1)
+
+        layout.addLayout(columns, 1)
 
         # Carica modelli all'avvio
         self.refresh_models()
 
     def refresh_models(self):
         self.models_list.clear()
+        self.remove_combo.clear()
         try:
             result = subprocess.run(
                 "ollama list 2>/dev/null || docker exec ollama ollama list 2>/dev/null",
@@ -748,6 +897,10 @@ class ModelsWidget(QWidget):
                     if line and not line.startswith('NAME'):
                         item = QListWidgetItem(line)
                         self.models_list.addItem(item)
+                        # Estrai nome modello per il combobox rimozione
+                        model_name = line.split()[0] if line.split() else ""
+                        if model_name:
+                            self.remove_combo.addItem(model_name)
         except Exception as e:
             self.models_list.addItem(f"Errore: {str(e)}")
 
@@ -759,8 +912,15 @@ class ModelsWidget(QWidget):
                 f"Download {model}..."
             )
 
+    def quick_download(self, model):
+        """Scarica un modello dalla lista consigliati"""
+        self.main_window.run_command(
+            f"ollama pull {model} 2>/dev/null || docker exec -it ollama ollama pull {model}",
+            f"Download {model}..."
+        )
+
     def remove_model(self):
-        model = self.remove_input.text().strip()
+        model = self.remove_combo.currentText().strip()
         if model:
             reply = QMessageBox.question(
                 self, "Conferma",
@@ -772,6 +932,8 @@ class ModelsWidget(QWidget):
                     f"ollama rm {model} 2>/dev/null || docker exec ollama ollama rm {model}",
                     f"Rimozione {model}..."
                 )
+                # Aggiorna lista dopo rimozione
+                QTimer.singleShot(2000, self.refresh_models)
 
 
 class ConfigWidget(QWidget):
@@ -779,6 +941,7 @@ class ConfigWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.main_window = parent
+        self.settings = QSettings("OpenWebUI", "Manager")
         self.setup_ui()
 
     def setup_ui(self):
@@ -791,64 +954,49 @@ class ConfigWidget(QWidget):
         title.setStyleSheet("color: #2c3e50;")
         layout.addWidget(title)
 
-        # LAN Access
+        # LAN Access - Layout a due colonne
         lan_group = QGroupBox("Accesso LAN (Cellulare/Tablet)")
-        lan_layout = QVBoxLayout(lan_group)
-        lan_layout.setSpacing(6)
-        lan_layout.setContentsMargins(8, 12, 8, 8)
+        lan_main_layout = QHBoxLayout(lan_group)
+        lan_main_layout.setSpacing(15)
+        lan_main_layout.setContentsMargins(10, 12, 10, 10)
 
-        # Indirizzo con pulsante copia
-        addr_row = QHBoxLayout()
-        addr_row.setSpacing(5)
-        addr_label = QLabel("📱 Indirizzo:")
-        addr_label.setStyleSheet("font-size: 11px; font-weight: bold;")
-        addr_row.addWidget(addr_label)
-
-        self.lan_url_field = QLineEdit()
-        self.lan_url_field.setReadOnly(True)
-        self.lan_url_field.setStyleSheet("font-family: Monospace; font-size: 11px; padding: 4px; background: #e8f5e9;")
-        addr_row.addWidget(self.lan_url_field, 1)
-
-        copy_url_btn = QPushButton("📋")
-        copy_url_btn.setMaximumWidth(30)
-        copy_url_btn.setToolTip("Copia indirizzo negli appunti")
-        copy_url_btn.clicked.connect(lambda: QApplication.clipboard().setText(self.lan_url_field.text()))
-        addr_row.addWidget(copy_url_btn)
-
-        lan_layout.addLayout(addr_row)
-
-        # Istruzioni compatte
-        instructions = QLabel(
-            "<b>Come collegarsi:</b> "
-            "1) Connetti il cellulare alla stessa WiFi · "
-            "2) Apri il browser e vai all'indirizzo · "
-            "3) Effettua il login"
-        )
-        instructions.setWordWrap(True)
-        instructions.setStyleSheet("font-size: 10px; color: #555; padding: 4px;")
-        lan_layout.addWidget(instructions)
-
-        # Pulsanti LAN
-        lan_btn_layout = QHBoxLayout()
-        lan_btn_layout.setSpacing(5)
+        # === COLONNA SINISTRA: Pulsanti in verticale (distanziati) ===
+        left_col = QVBoxLayout()
+        left_col.setSpacing(15)
 
         btn_lan_enable = ModernButton("🌐 Abilita LAN", "green")
         btn_lan_enable.setToolTip("Permette l'accesso da altri dispositivi sulla rete")
         btn_lan_enable.clicked.connect(self.enable_lan)
-        lan_btn_layout.addWidget(btn_lan_enable)
+        left_col.addWidget(btn_lan_enable)
 
-        btn_lan_disable = ModernButton("🔒 Solo Localhost", "red")
+        btn_lan_disable = ModernButton("🔒 Solo Localhost", "orange")
         btn_lan_disable.setToolTip("Limita l'accesso solo a questo computer")
         btn_lan_disable.clicked.connect(self.disable_lan)
-        lan_btn_layout.addWidget(btn_lan_disable)
+        left_col.addWidget(btn_lan_disable)
 
-        btn_lan_refresh = ModernButton("🔄", "blue")
-        btn_lan_refresh.setMaximumWidth(40)
+        btn_lan_refresh = ModernButton("🔄 Aggiorna IP", "blue")
         btn_lan_refresh.setToolTip("Aggiorna indirizzo IP")
         btn_lan_refresh.clicked.connect(self.update_lan_info)
-        lan_btn_layout.addWidget(btn_lan_refresh)
+        left_col.addWidget(btn_lan_refresh)
 
-        lan_layout.addLayout(lan_btn_layout)
+        left_col.addStretch()
+        lan_main_layout.addLayout(left_col)
+
+        # === COLONNA DESTRA: Spiegazione ===
+        instructions = QLabel(
+            "<div style='background-color: #e8f4fc; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>📱 Come collegarsi dal cellulare:</b><br><br>"
+            "<b>1.</b> Connetti il cellulare alla <b>stessa rete WiFi</b> del PC<br><br>"
+            "<b>2.</b> Clicca il pulsante verde <b>\"🌐 Abilita LAN\"</b><br><br>"
+            "<b>3.</b> Scansiona il <b>QR code</b> oppure digita l'indirizzo mostrato<br><br>"
+            "<hr style='border: 1px solid #bdd7ea;'>"
+            "<small>💡 Per tornare alla modalità sicura, clicca <b>\"🔒 Solo Localhost\"</b></small>"
+            "</div>"
+        )
+        instructions.setWordWrap(True)
+        instructions.setStyleSheet("font-size: 11px;")
+        lan_main_layout.addWidget(instructions, 1)
+
         layout.addWidget(lan_group)
 
         # HTTPS
@@ -885,7 +1033,7 @@ class ConfigWidget(QWidget):
         maint_layout.setContentsMargins(8, 12, 8, 8)
         maint_layout.setSpacing(8)
 
-        btn_update = ModernButton("⬆️ Aggiorna", "blue")
+        btn_update = ModernButton("⬆️ Aggiorna OpenWebUI", "blue")
         btn_update.setToolTip("Scarica l'ultima versione di Open WebUI")
         btn_update.clicked.connect(self.update_openwebui)
         maint_layout.addWidget(btn_update)
@@ -895,7 +1043,7 @@ class ConfigWidget(QWidget):
         btn_fix.clicked.connect(self.fix_openwebui)
         maint_layout.addWidget(btn_fix)
 
-        btn_backup = ModernButton("💾 Backup", "green")
+        btn_backup = ModernButton("💾 Backup in USB", "green")
         btn_backup.setToolTip("Crea backup dei dati su USB")
         btn_backup.clicked.connect(self.backup_usb)
         maint_layout.addWidget(btn_backup)
@@ -1052,6 +1200,11 @@ class ConfigWidget(QWidget):
         else:
             QMessageBox.warning(self, "Errore", "Script HTTPS non trovato")
 
+    def save_qr_setting(self, state):
+        """Salva l'impostazione QR-Code LAN"""
+        enabled = state == Qt.Checked
+        self.settings.setValue("qr_lan_enabled", enabled)
+
     def show_italian_guide(self):
         guide = """
 <h2>Configurazione Italiano in Open WebUI</h2>
@@ -1081,7 +1234,7 @@ Usa un linguaggio chiaro, professionale e amichevole.
         self.main_window.run_command(f"{DOCKER_COMPOSE} pull && {DOCKER_COMPOSE} up -d", "Aggiornamento Open WebUI...")
 
     def fix_openwebui(self):
-        self.main_window.run_command(f"{DOCKER_COMPOSE} down && docker system prune -f && {DOCKER_COMPOSE} up -d", "Riparazione Open WebUI...")
+        self.main_window.run_command(f"{DOCKER_COMPOSE} down && {DOCKER_COMPOSE} up -d --force-recreate", "Riparazione Open WebUI...")
 
     def backup_usb(self):
         script = SCRIPTS_DIR / "backup_to_usb.sh"
@@ -1143,250 +1296,252 @@ class TTSWidget(QWidget):
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        # Titolo
-        title = QLabel("Sintesi Vocale Italiana (Locale)")
-        title.setFont(QFont("Arial", 20, QFont.Bold))
-        title.setStyleSheet("color: #2c3e50;")
-        layout.addWidget(title)
-
-        # Info
-        info = QLabel("Voci italiane OFFLINE con Piper TTS. Non richiede internet dopo l'installazione.")
-        info.setWordWrap(True)
-        info.setStyleSheet("color: #27ae60; font-size: 11px; font-weight: bold;")
-        layout.addWidget(info)
-
         # === STATO SERVIZIO ===
         status_group = QGroupBox("Stato Servizio")
-        status_layout = QHBoxLayout(status_group)
-        status_layout.setContentsMargins(10, 10, 10, 10)
+        status_main_layout = QVBoxLayout(status_group)
+        status_main_layout.setSpacing(8)
+        status_main_layout.setContentsMargins(10, 12, 10, 10)
 
+        # Riga stato + pulsanti
+        status_row = QHBoxLayout()
         self.status_indicator = QLabel("●")
         self.status_indicator.setFont(QFont("Arial", 14))
         self.status_indicator.setStyleSheet("color: #f39c12;")
-        status_layout.addWidget(self.status_indicator)
+        status_row.addWidget(self.status_indicator)
 
         self.status_label = QLabel("Verifica in corso...")
         self.status_label.setFont(QFont("Arial", 10))
-        status_layout.addWidget(self.status_label)
-        status_layout.addStretch()
+        status_row.addWidget(self.status_label)
+        status_row.addStretch()
 
         self.start_service_btn = ModernButton("Avvia Servizio", "green")
         self.start_service_btn.clicked.connect(self.start_tts_service)
-        status_layout.addWidget(self.start_service_btn)
+        status_row.addWidget(self.start_service_btn)
 
         self.refresh_btn = ModernButton("Aggiorna", "gray")
         self.refresh_btn.clicked.connect(self.check_service_status)
-        status_layout.addWidget(self.refresh_btn)
+        status_row.addWidget(self.refresh_btn)
 
-        layout.addWidget(status_group)
+        status_main_layout.addLayout(status_row)
 
-        # === VOCI DISPONIBILI ===
-        voices_group = QGroupBox("Voci Italiane Disponibili")
-        voices_layout = QVBoxLayout(voices_group)
-        voices_layout.setSpacing(8)
+        # Layout a due colonne: Voci | Test
+        columns_layout = QHBoxLayout()
+        columns_layout.setSpacing(15)
+
+        # === COLONNA SINISTRA: Voci disponibili ===
+        left_column = QVBoxLayout()
+        left_column.setSpacing(8)
+
+        voices_label = QLabel("<b>Voci Italiane Disponibili</b>")
+        voices_label.setStyleSheet("font-size: 11px; color: #2980b9;")
+        left_column.addWidget(voices_label)
 
         # Voce Paola
         paola_row = QHBoxLayout()
-        paola_row.setSpacing(10)
-
+        paola_row.setSpacing(6)
         self.paola_status = QLabel("●")
-        self.paola_status.setFixedWidth(20)
-        self.paola_status.setFont(QFont("Arial", 14))
+        self.paola_status.setFixedWidth(14)
         self.paola_status.setStyleSheet("color: #bdc3c7;")
         paola_row.addWidget(self.paola_status)
-
-        paola_icon = QLabel("👩")
-        paola_icon.setFixedWidth(30)
-        paola_icon.setFont(QFont("Arial", 18))
-        paola_row.addWidget(paola_icon)
-
-        paola_info = QLabel("<b>Paola</b> - Voce femminile, qualità media (~30 MB)")
-        paola_info.setStyleSheet("color: #c2185b;")
-        paola_row.addWidget(paola_info, 1)
-
+        paola_row.addWidget(QLabel("👩 <b>Paola</b>"))
+        paola_row.addStretch()
         self.install_paola_btn = ModernButton("Scarica", "purple")
-        self.install_paola_btn.setFixedWidth(90)
+        self.install_paola_btn.setFixedWidth(70)
         self.install_paola_btn.clicked.connect(lambda: self.install_voice("paola"))
         paola_row.addWidget(self.install_paola_btn)
-
-        voices_layout.addLayout(paola_row)
+        left_column.addLayout(paola_row)
 
         # Voce Riccardo
         riccardo_row = QHBoxLayout()
-        riccardo_row.setSpacing(10)
-
+        riccardo_row.setSpacing(6)
         self.riccardo_status = QLabel("●")
-        self.riccardo_status.setFixedWidth(20)
-        self.riccardo_status.setFont(QFont("Arial", 14))
+        self.riccardo_status.setFixedWidth(14)
         self.riccardo_status.setStyleSheet("color: #bdc3c7;")
         riccardo_row.addWidget(self.riccardo_status)
-
-        riccardo_icon = QLabel("👨")
-        riccardo_icon.setFixedWidth(30)
-        riccardo_icon.setFont(QFont("Arial", 18))
-        riccardo_row.addWidget(riccardo_icon)
-
-        riccardo_info = QLabel("<b>Riccardo</b> - Voce maschile, veloce (~30 MB)")
-        riccardo_info.setStyleSheet("color: #1565c0;")
-        riccardo_row.addWidget(riccardo_info, 1)
-
+        riccardo_row.addWidget(QLabel("👨 <b>Riccardo</b>"))
+        riccardo_row.addStretch()
         self.install_riccardo_btn = ModernButton("Scarica", "purple")
-        self.install_riccardo_btn.setFixedWidth(90)
+        self.install_riccardo_btn.setFixedWidth(70)
         self.install_riccardo_btn.clicked.connect(lambda: self.install_voice("riccardo"))
         riccardo_row.addWidget(self.install_riccardo_btn)
-
-        voices_layout.addLayout(riccardo_row)
+        left_column.addLayout(riccardo_row)
 
         # Pulsante scarica tutte
-        script_btn = ModernButton("📥 Scarica Tutte le Voci", "blue")
+        script_btn = ModernButton("📥 Scarica Tutte", "blue")
         script_btn.clicked.connect(self.run_download_script)
-        voices_layout.addWidget(script_btn)
+        left_column.addWidget(script_btn)
 
-        layout.addWidget(voices_group)
+        left_column.addStretch()
+        columns_layout.addLayout(left_column, 1)
 
-        # === TEST VOCE ===
-        test_group = QGroupBox("Test Voce")
-        test_layout = QVBoxLayout(test_group)
-        test_layout.setSpacing(8)
+        # Separatore verticale
+        vsep = QFrame()
+        vsep.setFrameShape(QFrame.VLine)
+        vsep.setStyleSheet("background-color: #ddd;")
+        columns_layout.addWidget(vsep)
 
-        # Riga voce
+        # === COLONNA DESTRA: Test voce ===
+        right_column = QVBoxLayout()
+        right_column.setSpacing(6)
+
+        test_label = QLabel("<b>Test Voce</b>")
+        test_label.setStyleSheet("font-size: 11px; color: #27ae60;")
+        right_column.addWidget(test_label)
+
+        # Layout orizzontale: controlli | risultato
+        test_h_layout = QHBoxLayout()
+        test_h_layout.setSpacing(10)
+
+        # Controlli a sinistra (compatti)
+        controls_layout = QVBoxLayout()
+        controls_layout.setSpacing(5)
+
+        # Voce
         voice_row = QHBoxLayout()
         voice_row.addWidget(QLabel("Voce:"))
         self.voice_combo = QComboBox()
-        self.voice_combo.addItems(["paola (Femminile)", "riccardo (Maschile)"])
-        self.voice_combo.setMinimumWidth(200)
-        voice_row.addWidget(self.voice_combo, 1)
-        test_layout.addLayout(voice_row)
+        self.voice_combo.addItems(["paola", "riccardo"])
+        self.voice_combo.setMinimumWidth(90)
+        voice_row.addWidget(self.voice_combo)
+        controls_layout.addLayout(voice_row)
 
-        # Riga testo
-        text_row = QHBoxLayout()
-        text_row.addWidget(QLabel("Testo:"))
-        self.test_text = QLineEdit()
-        self.test_text.setText("Ciao! Sono una voce italiana locale.")
-        self.test_text.setMinimumWidth(200)
-        text_row.addWidget(self.test_text, 1)
-        test_layout.addLayout(text_row)
+        # Testo
+        self.test_text = QLineEdit("Ciao!")
+        self.test_text.setPlaceholderText("Testo...")
+        self.test_text.setMinimumWidth(120)
+        controls_layout.addWidget(self.test_text)
 
-        # Pulsanti test
-        test_btn_row = QHBoxLayout()
-        self.test_btn = ModernButton("Test Voce", "blue")
+        # Pulsanti
+        self.test_btn = ModernButton("🔊 Test", "blue")
         self.test_btn.clicked.connect(self.test_voice)
-        test_btn_row.addWidget(self.test_btn)
+        controls_layout.addWidget(self.test_btn)
 
-        self.play_btn = ModernButton("Riproduci Audio", "green")
+        self.play_btn = ModernButton("▶ Play", "green")
         self.play_btn.clicked.connect(self.play_test_audio)
         self.play_btn.setEnabled(False)
-        test_btn_row.addWidget(self.play_btn)
-        test_layout.addLayout(test_btn_row)
+        controls_layout.addWidget(self.play_btn)
 
-        layout.addWidget(test_group)
+        controls_layout.addStretch()
+        test_h_layout.addLayout(controls_layout)
 
-        # === RISULTATO ===
-        result_group = QGroupBox("Risultato")
-        result_layout = QVBoxLayout(result_group)
+        # Risultato a destra (più largo)
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        self.result_text.setMaximumHeight(80)
-        self.result_text.setPlaceholderText("Avvia un test per vedere i risultati...")
-        result_layout.addWidget(self.result_text)
-        layout.addWidget(result_group)
+        self.result_text.setPlaceholderText("Risultato...")
+        self.result_text.setStyleSheet("background: #f5f5f5; border: 1px solid #ddd; border-radius: 3px; font-size: 10px;")
+        test_h_layout.addWidget(self.result_text, 1)
+
+        right_column.addLayout(test_h_layout, 1)
+
+        columns_layout.addLayout(right_column, 1)
+
+        status_main_layout.addLayout(columns_layout, 1)
+
+        layout.addWidget(status_group)
 
         # === CONFIGURAZIONE ===
         config_group = QGroupBox("Come configurare Open WebUI")
-        config_layout = QVBoxLayout(config_group)
-        config_layout.setSpacing(8)
+        config_main = QVBoxLayout(config_group)
+        config_main.setSpacing(6)
+        config_main.setContentsMargins(10, 10, 10, 10)
 
         # Istruzioni
         instructions = QLabel(
             "<b>Vai in:</b> Open WebUI → Impostazioni → Audio → Sintesi Vocale (TTS)"
         )
-        instructions.setWordWrap(True)
-        instructions.setStyleSheet("font-size: 11px; padding: 5px;")
-        config_layout.addWidget(instructions)
+        instructions.setStyleSheet("font-size: 10px; padding: 3px;")
+        config_main.addWidget(instructions)
 
-        # Parametri con pulsanti copia
-        def create_param_row(label_text, value, layout):
+        # Layout a due colonne
+        columns = QHBoxLayout()
+        columns.setSpacing(15)
+
+        # === COLONNA SINISTRA: Parametri ===
+        left_col = QVBoxLayout()
+        left_col.setSpacing(4)
+
+        def create_param_row(label_text, value, parent_layout):
             row = QHBoxLayout()
-            row.setSpacing(5)
+            row.setSpacing(4)
             label = QLabel(f"<b>{label_text}:</b>")
-            label.setMinimumWidth(80)
-            label.setStyleSheet("font-size: 10px;")
+            label.setMinimumWidth(65)
+            label.setStyleSheet("font-size: 9px;")
             row.addWidget(label)
-
             field = QLineEdit(value)
             field.setReadOnly(True)
-            field.setStyleSheet("font-family: Monospace; font-size: 10px; padding: 3px; background: #f5f5f5;")
+            field.setStyleSheet("font-family: Monospace; font-size: 9px; padding: 2px; background: #f5f5f5;")
             row.addWidget(field, 1)
-
             copy_btn = QPushButton("📋")
-            copy_btn.setMaximumWidth(28)
-            copy_btn.setToolTip(f"Copia {label_text}")
+            copy_btn.setMaximumWidth(24)
+            copy_btn.setMaximumHeight(22)
             copy_btn.clicked.connect(lambda: QApplication.clipboard().setText(value))
             row.addWidget(copy_btn)
-
-            layout.addLayout(row)
+            parent_layout.addLayout(row)
             return field
 
-        # Parametri individuali
-        create_param_row("Motore TTS", "OpenAI", config_layout)
-        self.url_field = create_param_row("URL API", "http://localhost:5556/v1", config_layout)
-        create_param_row("Chiave API", "sk-local", config_layout)
-        create_param_row("Voce", "paola", config_layout)
+        create_param_row("Motore", "OpenAI", left_col)
+        create_param_row("URL API", "http://localhost:5556/v1", left_col)
+        create_param_row("Chiave", "sk-local", left_col)
+        create_param_row("Voce", "paola", left_col)
 
-        # Nota Docker
+        left_col.addStretch()
+        columns.addLayout(left_col, 1)
+
+        # Separatore verticale
+        vsep = QFrame()
+        vsep.setFrameShape(QFrame.VLine)
+        vsep.setStyleSheet("background-color: #ddd;")
+        columns.addWidget(vsep)
+
+        # === COLONNA DESTRA: Docker ===
+        right_col = QVBoxLayout()
+        right_col.setSpacing(4)
+
+        docker_title = QLabel("<b style='color: #e67e22;'>Per Docker:</b>")
+        docker_title.setStyleSheet("font-size: 10px;")
+        right_col.addWidget(docker_title)
+
+        # Docker URL
         docker_row = QHBoxLayout()
-        docker_row.setSpacing(5)
-        docker_label = QLabel("<b>Docker URL:</b>")
-        docker_label.setMinimumWidth(80)
-        docker_label.setStyleSheet("font-size: 10px; color: #e67e22;")
-        docker_row.addWidget(docker_label)
-
+        docker_row.setSpacing(4)
         docker_field = QLineEdit("http://host.docker.internal:5556/v1")
         docker_field.setReadOnly(True)
-        docker_field.setStyleSheet("font-family: Monospace; font-size: 10px; padding: 3px; background: #fef5e7;")
+        docker_field.setStyleSheet("font-family: Monospace; font-size: 9px; padding: 2px; background: #fef5e7;")
         docker_row.addWidget(docker_field, 1)
-
         docker_copy = QPushButton("📋")
-        docker_copy.setMaximumWidth(28)
-        docker_copy.setToolTip("Copia URL Docker")
+        docker_copy.setMaximumWidth(24)
+        docker_copy.setMaximumHeight(22)
         docker_copy.clicked.connect(lambda: QApplication.clipboard().setText("http://host.docker.internal:5556/v1"))
         docker_row.addWidget(docker_copy)
-
-        config_layout.addLayout(docker_row)
-
-        # Separator
-        sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("background-color: #ddd;")
-        config_layout.addWidget(sep)
+        right_col.addLayout(docker_row)
 
         # docker-compose.yml
-        env_label = QLabel("<b>Per docker-compose.yml</b> (copia tutto):")
-        env_label.setStyleSheet("font-size: 10px;")
-        config_layout.addWidget(env_label)
-
         self.config_text = QTextEdit()
         self.config_text.setReadOnly(True)
-        self.config_text.setMaximumHeight(70)
-        self.config_text.setFont(QFont("Monospace", 9))
+        self.config_text.setMaximumHeight(55)
+        self.config_text.setFont(QFont("Monospace", 8))
         self.config_text.setPlainText(
             "AUDIO_TTS_ENGINE=openai\n"
             "AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5556/v1\n"
             "AUDIO_TTS_OPENAI_API_KEY=sk-local\n"
             "AUDIO_TTS_VOICE=paola"
         )
-        config_layout.addWidget(self.config_text)
+        right_col.addWidget(self.config_text)
 
+        # Pulsanti
         btn_row = QHBoxLayout()
-        copy_btn = ModernButton("📋 Copia Tutto", "blue")
+        btn_row.setSpacing(5)
+        copy_btn = ModernButton("📋 Copia", "blue")
         copy_btn.clicked.connect(self.copy_config)
         btn_row.addWidget(copy_btn)
-
-        apply_btn = ModernButton("Applica a docker-compose.yml", "orange")
+        apply_btn = ModernButton("⚙️ Applica", "orange")
         apply_btn.clicked.connect(self.apply_config)
         btn_row.addWidget(apply_btn)
+        right_col.addLayout(btn_row)
 
-        config_layout.addLayout(btn_row)
+        columns.addLayout(right_col, 1)
+
+        config_main.addLayout(columns)
         layout.addWidget(config_group)
 
         layout.addStretch()
@@ -1447,9 +1602,8 @@ class TTSWidget(QWidget):
                     self.install_riccardo_btn.setEnabled(True)
             else:
                 self._set_service_offline()
-        except Exception as e:
+        except Exception:
             self._set_service_offline()
-            print(f"[TTS] Errore check status: {e}")
 
     def _set_service_offline(self):
         self.status_indicator.setStyleSheet("color: #e74c3c;")
@@ -1705,8 +1859,8 @@ class TTSWidget(QWidget):
             )
 
 
-class CloudLocaleWidget(QWidget):
-    """Widget Cloud Locale - Archiviazione privata per Open WebUI"""
+class ArchivioWidget(QWidget):
+    """Widget Archivio - Gestione file locali per Open WebUI"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.main_window = parent
@@ -1719,86 +1873,85 @@ class CloudLocaleWidget(QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
-        layout.setContentsMargins(8, 8, 8, 8)
-
-        # === HEADER: Titolo + Cartella Privata ===
-        header_group = QGroupBox("Cartella Privata")
-        header_layout = QVBoxLayout(header_group)
-        header_layout.setContentsMargins(8, 12, 8, 8)
-        header_layout.setSpacing(6)
-
-        # Riga abilitazione + percorso
-        enable_row = QHBoxLayout()
-
-        self.enable_checkbox = QCheckBox("Abilita")
-        self.enable_checkbox.setChecked(True)
-        self.enable_checkbox.setStyleSheet("font-size: 11px;")
-        self.enable_checkbox.stateChanged.connect(self.toggle_private_folder)
-        enable_row.addWidget(self.enable_checkbox)
-
-        self.path_label = QLabel("Nessuna cartella")
-        self.path_label.setStyleSheet("""
-            QLabel {
-                background-color: #ecf0f1;
-                border: 1px solid #bdc3c7;
-                border-radius: 3px;
-                padding: 5px 8px;
-                font-family: Monospace;
-                font-size: 10px;
-            }
-        """)
-        enable_row.addWidget(self.path_label, 1)
-
-        self.select_folder_btn = ModernButton("📁 Sfoglia", "blue")
-        self.select_folder_btn.setMaximumWidth(80)
-        self.select_folder_btn.setMinimumHeight(30)
-        self.select_folder_btn.clicked.connect(self.select_private_folder)
-        enable_row.addWidget(self.select_folder_btn)
-
-        header_layout.addLayout(enable_row)
-        layout.addWidget(header_group)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         # === ESPLORA FILE ===
         browser_group = QGroupBox("Esplora File")
         browser_layout = QVBoxLayout(browser_group)
-        browser_layout.setContentsMargins(5, 12, 5, 5)
-        browser_layout.setSpacing(5)
+        browser_layout.setContentsMargins(10, 12, 10, 10)
+        browser_layout.setSpacing(8)
 
-        # Toolbar navigazione compatta
+        # Toolbar navigazione con percorso e preferiti
         nav_row = QHBoxLayout()
-        nav_row.setSpacing(3)
+        nav_row.setSpacing(5)
 
         self.back_btn = QPushButton("◀")
-        self.back_btn.setMaximumWidth(30)
-        self.back_btn.setMinimumHeight(26)
+        self.back_btn.setMaximumWidth(32)
+        self.back_btn.setMinimumHeight(28)
+        self.back_btn.setToolTip("Indietro")
         self.back_btn.clicked.connect(self.go_back)
         nav_row.addWidget(self.back_btn)
 
         self.up_btn = QPushButton("▲")
-        self.up_btn.setMaximumWidth(30)
-        self.up_btn.setMinimumHeight(26)
+        self.up_btn.setMaximumWidth(32)
+        self.up_btn.setMinimumHeight(28)
+        self.up_btn.setToolTip("Cartella superiore")
         self.up_btn.clicked.connect(self.go_up)
         nav_row.addWidget(self.up_btn)
 
         self.home_btn = QPushButton("⌂")
-        self.home_btn.setMaximumWidth(30)
-        self.home_btn.setMinimumHeight(26)
+        self.home_btn.setMaximumWidth(32)
+        self.home_btn.setMinimumHeight(28)
+        self.home_btn.setToolTip("Vai alla cartella preferita")
         self.home_btn.clicked.connect(self.go_home)
         nav_row.addWidget(self.home_btn)
 
         self.refresh_btn = QPushButton("↻")
-        self.refresh_btn.setMaximumWidth(30)
-        self.refresh_btn.setMinimumHeight(26)
+        self.refresh_btn.setMaximumWidth(32)
+        self.refresh_btn.setMinimumHeight(28)
+        self.refresh_btn.setToolTip("Aggiorna")
         self.refresh_btn.clicked.connect(self.refresh_view)
         nav_row.addWidget(self.refresh_btn)
 
-        self.current_path_label = QLabel("")
-        self.current_path_label.setStyleSheet("font-size: 10px; color: #7f8c8d; padding-left: 5px;")
-        nav_row.addWidget(self.current_path_label, 1)
+        # Percorso corrente
+        self.path_label = QLineEdit()
+        self.path_label.setReadOnly(True)
+        self.path_label.setPlaceholderText("Nessuna cartella selezionata")
+        self.path_label.setStyleSheet("""
+            QLineEdit {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 3px;
+                padding: 4px 8px;
+                font-family: Monospace;
+                font-size: 10px;
+            }
+        """)
+        nav_row.addWidget(self.path_label, 1)
+
+        # Pulsante preferiti (imposta cartella home)
+        self.star_btn = QPushButton("⭐")
+        self.star_btn.setMaximumWidth(32)
+        self.star_btn.setMinimumHeight(28)
+        self.star_btn.setToolTip("Imposta come cartella preferita")
+        self.star_btn.clicked.connect(self.set_as_favorite)
+        nav_row.addWidget(self.star_btn)
+
+        # Pulsante sfoglia
+        self.select_folder_btn = QPushButton("📁")
+        self.select_folder_btn.setMaximumWidth(32)
+        self.select_folder_btn.setMinimumHeight(28)
+        self.select_folder_btn.setToolTip("Sfoglia cartelle")
+        self.select_folder_btn.clicked.connect(self.select_private_folder)
+        nav_row.addWidget(self.select_folder_btn)
 
         browser_layout.addLayout(nav_row)
 
-        # File System Model e TreeView
+        # Layout a due colonne: TreeView | Azioni + Risultato
+        columns_layout = QHBoxLayout()
+        columns_layout.setSpacing(10)
+
+        # === COLONNA SINISTRA: File Manager ===
         self.file_model = QFileSystemModel()
         self.file_model.setRootPath("")
         self.file_model.setFilter(QDir.AllEntries | QDir.NoDotAndDotDot)
@@ -1810,7 +1963,7 @@ class CloudLocaleWidget(QWidget):
         self.tree_view.setSelectionMode(QAbstractItemView.SingleSelection)
 
         # Configura colonne
-        self.tree_view.setColumnWidth(0, 250)
+        self.tree_view.setColumnWidth(0, 200)
         self.tree_view.setColumnHidden(2, True)  # Tipo
 
         # Stile compatto
@@ -1836,118 +1989,193 @@ class CloudLocaleWidget(QWidget):
         self.tree_view.doubleClicked.connect(self.on_item_double_clicked)
         self.tree_view.clicked.connect(self.on_item_clicked)
 
-        browser_layout.addWidget(self.tree_view, 1)  # Stretch per occupare spazio
+        columns_layout.addWidget(self.tree_view, 1)
 
-        # Info file + Azioni in una riga
-        info_actions_row = QHBoxLayout()
-        info_actions_row.setSpacing(8)
+        # === COLONNA DESTRA: Info + Pulsanti + Risultato ===
+        right_column = QVBoxLayout()
+        right_column.setSpacing(8)
 
+        # Info file selezionato
         self.file_info_label = QLabel("Seleziona un file")
         self.file_info_label.setStyleSheet("""
             QLabel {
                 background-color: #f8f9fa;
                 border: 1px solid #dee2e6;
                 border-radius: 3px;
-                padding: 6px;
-                font-size: 10px;
+                padding: 8px;
+                font-size: 11px;
             }
         """)
-        info_actions_row.addWidget(self.file_info_label, 1)
+        self.file_info_label.setMinimumHeight(40)
+        right_column.addWidget(self.file_info_label)
 
-        # Pulsanti azione compatti
-        self.export_base64_btn = QPushButton("Base64")
-        self.export_base64_btn.setMinimumHeight(28)
-        self.export_base64_btn.setStyleSheet("font-size: 10px; padding: 4px 8px;")
+        # Pulsanti azione in griglia 2x2
+        btn_grid = QGridLayout()
+        btn_grid.setSpacing(5)
+
+        self.export_base64_btn = QPushButton("📄 Base64")
+        self.export_base64_btn.setMinimumHeight(32)
+        self.export_base64_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.export_base64_btn.clicked.connect(self.export_to_base64)
         self.export_base64_btn.setEnabled(False)
-        info_actions_row.addWidget(self.export_base64_btn)
+        btn_grid.addWidget(self.export_base64_btn, 0, 0)
 
-        self.open_file_btn = QPushButton("Apri")
-        self.open_file_btn.setMinimumHeight(28)
-        self.open_file_btn.setStyleSheet("font-size: 10px; padding: 4px 8px;")
+        self.open_file_btn = QPushButton("📂 Apri")
+        self.open_file_btn.setMinimumHeight(32)
+        self.open_file_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.open_file_btn.clicked.connect(self.open_selected_file)
         self.open_file_btn.setEnabled(False)
-        info_actions_row.addWidget(self.open_file_btn)
+        btn_grid.addWidget(self.open_file_btn, 0, 1)
 
-        self.copy_path_btn = QPushButton("Percorso")
-        self.copy_path_btn.setMinimumHeight(28)
-        self.copy_path_btn.setStyleSheet("font-size: 10px; padding: 4px 8px;")
+        self.copy_path_btn = QPushButton("📋 Percorso")
+        self.copy_path_btn.setMinimumHeight(32)
+        self.copy_path_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.copy_path_btn.clicked.connect(self.copy_file_path)
         self.copy_path_btn.setEnabled(False)
-        info_actions_row.addWidget(self.copy_path_btn)
+        btn_grid.addWidget(self.copy_path_btn, 1, 0)
 
-        self.copy_result_btn = QPushButton("📋 Copia")
-        self.copy_result_btn.setMinimumHeight(28)
-        self.copy_result_btn.setStyleSheet("font-size: 10px; padding: 4px 8px; background-color: #9b59b6; color: white;")
+        self.copy_result_btn = QPushButton("📋 Copia Risultato")
+        self.copy_result_btn.setMinimumHeight(32)
+        self.copy_result_btn.setStyleSheet("font-size: 11px; padding: 6px; background-color: #9b59b6; color: white;")
         self.copy_result_btn.clicked.connect(self.copy_result)
         self.copy_result_btn.setEnabled(False)
-        info_actions_row.addWidget(self.copy_result_btn)
+        btn_grid.addWidget(self.copy_result_btn, 1, 1)
 
-        browser_layout.addLayout(info_actions_row)
+        right_column.addLayout(btn_grid)
 
-        # Risultato esportazione (compatto)
+        # Risultato esportazione
+        result_label = QLabel("Risultato esportazione:")
+        result_label.setStyleSheet("font-size: 10px; font-weight: bold; color: #555;")
+        right_column.addWidget(result_label)
+
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        self.result_text.setMaximumHeight(50)
-        self.result_text.setPlaceholderText("Risultato esportazione...")
+        self.result_text.setPlaceholderText("Seleziona un file e clicca Base64...")
         self.result_text.setFont(QFont("Monospace", 9))
         self.result_text.setStyleSheet("border: 1px solid #ddd; border-radius: 3px;")
-        browser_layout.addWidget(self.result_text)
+        right_column.addWidget(self.result_text, 1)
+
+        columns_layout.addLayout(right_column, 1)
+
+        browser_layout.addLayout(columns_layout, 1)
 
         layout.addWidget(browser_group, 1)  # Stretch per occupare spazio
 
-        # === ISTRUZIONI ===
-        help_group = QGroupBox("Come usare in Open WebUI")
-        help_layout = QVBoxLayout(help_group)
-        help_layout.setContentsMargins(8, 12, 8, 8)
-        help_layout.setSpacing(6)
+        # === COME FUNZIONA (layout a due colonne) ===
+        config_group = QGroupBox("💡 Come Funziona?")
+        config_layout = QHBoxLayout(config_group)
+        config_layout.setContentsMargins(10, 15, 10, 10)
+        config_layout.setSpacing(15)
 
-        help_text = QLabel(
-            "<b>1. Immagini:</b> Seleziona file → Base64 → Copia → Incolla nella chat<br>"
-            "<b>2. Documenti:</b> Crea Knowledge Base, poi scrivi nella chat:"
+        # === COLONNA SINISTRA: Spiegazione ===
+        left_col = QVBoxLayout()
+        left_col.setSpacing(8)
+
+        intro_box = QLabel(
+            "<div style='background-color: #e8f6e8; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>🎯 A cosa serve?</b><br><br>"
+            "Open WebUI ha dei <b>bug</b> quando importi file dal browser.<br><br>"
+            "Questa funzione crea un <b>\"cloud privato\"</b> sul tuo PC:<br><br>"
+            "✅ I tuoi file <b>restano sul computer</b><br>"
+            "✅ Niente upload su internet<br>"
+            "✅ Open WebUI li vede senza errori<br>"
+            "✅ Bypassa i problemi di importazione</div>"
         )
-        help_text.setWordWrap(True)
-        help_text.setStyleSheet("font-size: 10px;")
-        help_layout.addWidget(help_text)
+        intro_box.setWordWrap(True)
+        intro_box.setStyleSheet("font-size: 11px;")
+        left_col.addWidget(intro_box)
 
-        # Riga comando con pulsante copia
-        cmd_row = QHBoxLayout()
-        cmd_row.setSpacing(5)
+        # Nota chat in basso a sinistra
+        note_box = QLabel(
+            "<div style='background-color: #e3f2fd; padding: 10px; border-radius: 6px;'>"
+            "<b>💬 Per usare i file in chat:</b><br>"
+            "<code style='background: #fff; padding: 2px 5px;'>@nome_knowledge descrivi questo</code></div>"
+        )
+        note_box.setWordWrap(True)
+        note_box.setStyleSheet("font-size: 10px;")
+        left_col.addWidget(note_box)
 
-        self.kb_command = QLineEdit("@nome_knowledge dimmi cosa contiene questo documento")
-        self.kb_command.setReadOnly(True)
-        self.kb_command.setStyleSheet("font-family: Monospace; font-size: 10px; padding: 4px;")
-        cmd_row.addWidget(self.kb_command, 1)
+        left_col.addStretch()
+        config_layout.addLayout(left_col, 1)
 
-        copy_kb_btn = QPushButton("📋")
-        copy_kb_btn.setMaximumWidth(30)
-        copy_kb_btn.setToolTip("Copia comando")
-        copy_kb_btn.clicked.connect(lambda: QApplication.clipboard().setText(self.kb_command.text()))
-        cmd_row.addWidget(copy_kb_btn)
+        # === COLONNA DESTRA: 3 Passaggi ===
+        right_col = QVBoxLayout()
+        right_col.setSpacing(10)
 
-        help_layout.addLayout(cmd_row)
+        steps_label = QLabel("<b style='font-size: 13px;'>📋 3 Passi Semplicissimi</b>")
+        steps_label.setStyleSheet("color: #2c3e50;")
+        right_col.addWidget(steps_label)
 
-        # Nota
-        note = QLabel("<i>Sostituisci 'nome_knowledge' con il nome della tua Knowledge Base</i>")
-        note.setStyleSheet("font-size: 9px; color: #666;")
-        help_layout.addWidget(note)
+        step1 = QLabel(
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #27ae60; margin: 2px 0;'>"
+            "<b style='color: #27ae60;'>1.</b> <b>Scegli la cartella</b><br>"
+            "Naviga e clicca ⭐ sulla cartella desiderata</div>"
+        )
+        step1.setWordWrap(True)
+        step1.setStyleSheet("font-size: 11px;")
+        right_col.addWidget(step1)
 
-        layout.addWidget(help_group)
+        step2 = QLabel(
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #f39c12; margin: 2px 0;'>"
+            "<b style='color: #f39c12;'>2.</b> <b>Copia nel docker-compose.yml</b></div>"
+        )
+        step2.setWordWrap(True)
+        step2.setStyleSheet("font-size: 11px;")
+        right_col.addWidget(step2)
 
-    def toggle_private_folder(self, state):
-        """Abilita/disabilita la cartella privata"""
-        enabled = state == Qt.Checked
-        self.tree_view.setEnabled(enabled)
-        self.select_folder_btn.setEnabled(enabled)
-        self.back_btn.setEnabled(enabled)
-        self.up_btn.setEnabled(enabled)
-        self.home_btn.setEnabled(enabled)
-        self.refresh_btn.setEnabled(enabled)
+        # Volume path con pulsante copia
+        volume_row = QHBoxLayout()
+        volume_row.setSpacing(5)
 
-        if not enabled:
-            self.export_base64_btn.setEnabled(False)
-            self.open_file_btn.setEnabled(False)
-            self.copy_path_btn.setEnabled(False)
+        self.volume_field = QLineEdit("- /percorso/cartella:/app/backend/data/uploads")
+        self.volume_field.setReadOnly(True)
+        self.volume_field.setStyleSheet("font-family: Monospace; font-size: 9px; padding: 6px; background: #fff3cd; border: 1px solid #ffc107;")
+        volume_row.addWidget(self.volume_field, 1)
+
+        copy_volume_btn = QPushButton("📋")
+        copy_volume_btn.setMaximumWidth(35)
+        copy_volume_btn.setToolTip("Copia configurazione")
+        copy_volume_btn.clicked.connect(self.copy_volume_config)
+        volume_row.addWidget(copy_volume_btn)
+
+        right_col.addLayout(volume_row)
+
+        step3 = QLabel(
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #3498db; margin: 2px 0;'>"
+            "<b style='color: #3498db;'>3.</b> <b>Riavvia Docker</b><br>"
+            "Fatto! I file ⭐ saranno visibili in Open WebUI</div>"
+        )
+        step3.setWordWrap(True)
+        step3.setStyleSheet("font-size: 11px;")
+        right_col.addWidget(step3)
+
+        right_col.addStretch()
+        config_layout.addLayout(right_col, 1)
+
+        layout.addWidget(config_group)
+
+    def set_as_favorite(self):
+        """Imposta la cartella corrente come preferita"""
+        if self.current_path:
+            self.settings.setValue("private_folder", self.current_path)
+            self.star_btn.setStyleSheet("background-color: #f1c40f;")
+            if self.main_window:
+                self.main_window.statusBar().showMessage(f"⭐ Cartella preferita: {self.current_path}", 3000)
+        else:
+            if self.main_window:
+                self.main_window.statusBar().showMessage("Seleziona prima una cartella", 3000)
+
+    def copy_volume_config(self):
+        """Copia la configurazione del volume Docker con il percorso attuale"""
+        if self.current_path:
+            volume_config = f"- {self.current_path}:/app/backend/data/uploads"
+            QApplication.clipboard().setText(volume_config)
+            self.volume_field.setText(volume_config)
+            if self.main_window:
+                self.main_window.statusBar().showMessage("Configurazione volume copiata!", 3000)
+        else:
+            if self.main_window:
+                self.main_window.statusBar().showMessage("Seleziona prima una cartella", 3000)
 
     def load_settings(self):
         """Carica le impostazioni salvate"""
@@ -1983,7 +2211,18 @@ class CloudLocaleWidget(QWidget):
         # Aggiorna il tree view
         index = self.file_model.setRootPath(folder_path)
         self.tree_view.setRootIndex(index)
-        self.current_path_label.setText(folder_path)
+
+        # Aggiorna il campo volume Docker
+        if hasattr(self, 'volume_field'):
+            self.volume_field.setText(f"- {folder_path}:/app/backend/data/uploads")
+
+        # Evidenzia stellina se è la cartella preferita
+        favorite = self.settings.value("private_folder", "")
+        if hasattr(self, 'star_btn'):
+            if folder_path == favorite:
+                self.star_btn.setStyleSheet("background-color: #f1c40f;")
+            else:
+                self.star_btn.setStyleSheet("")
 
     def go_back(self):
         """Torna alla cartella precedente"""
@@ -2169,14 +2408,30 @@ class InfoWidget(QWidget):
         thanks_layout.setContentsMargins(15, 20, 15, 15)
 
         thanks_info = QLabel(
-            "Grazie per aver scelto di usare questo programma!<br><br>"
-            "Spero che ti sia utile per esplorare il mondo dell'intelligenza artificiale "
-            "in modo semplice e privato, direttamente dal tuo computer.<br><br>"
-            "<b>Autore:</b> Paolo Lo Bello"
+            "<div style='text-align: center;'>"
+            "<p style='font-size: 14px; color: #2c3e50;'>"
+            "Grazie per aver scelto <b>Open WebUI Manager</b>.</p>"
+            "<p style='font-size: 12px; color: #555; margin-top: 10px;'>"
+            "Questo progetto nasce con l'obiettivo di rendere l'intelligenza artificiale "
+            "accessibile a tutti, garantendo <b>privacy</b> e <b>semplicità d'uso</b>.<br><br>"
+            "Tutti i dati rimangono sul tuo dispositivo. Nessuna informazione viene condivisa con terzi.</p>"
+            "<hr style='border: 1px solid #eee; margin: 15px 0;'>"
+            "<p style='font-size: 11px; color: #777;'>"
+            "<b>Sviluppato da:</b> Paolo Lo Bello<br>"
+            "<b>Licenza:</b> Open Source<br>"
+            "<b>Versione:</b> 1.1.0</p>"
+            "<hr style='border: 1px solid #eee; margin: 15px 0;'>"
+            "<p style='font-size: 11px;'>"
+            "<a href='https://github.com/wildlux/OWUIM' style='color: #333;'>🐙 GitHub</a> · "
+            "<a href='https://wildlux.pythonanywhere.com/' style='color: #27ae60;'>🌐 Sito Test Django</a> · "
+            "<a href='https://paololobello.altervista.org/' style='color: #e74c3c;'>📝 Blog</a> · "
+            "<a href='https://www.linkedin.com/in/paololobello/' style='color: #0077b5;'>💼 LinkedIn</a>"
+            "</p>"
+            "</div>"
         )
         thanks_info.setWordWrap(True)
         thanks_info.setAlignment(Qt.AlignCenter)
-        thanks_info.setStyleSheet("font-size: 13px; line-height: 1.5;")
+        thanks_info.setOpenExternalLinks(True)
         thanks_layout.addWidget(thanks_info)
         layout.addWidget(thanks_group)
 
@@ -2257,29 +2512,118 @@ class MainWindow(QMainWindow):
 
         # Tab widget
         self.tabs = QTabWidget()
-        self.tabs.setFont(QFont("Arial", 11))
+        self.tabs.setFont(QFont("Arial", 10))
+        self.tabs.setUsesScrollButtons(True)
 
         # Pagine
         self.dashboard = DashboardWidget(self)
         self.logs = LogsWidget(self)
         self.models = ModelsWidget(self)
         self.config = ConfigWidget(self)
-        self.cloud_locale = CloudLocaleWidget(self)
+        self.archivio = ArchivioWidget(self)
         self.tts_widget = TTSWidget(self)
         self.info_widget = InfoWidget(self)
 
         self.tabs.addTab(self.dashboard, "🏠 Dashboard")
         self.tabs.addTab(self.logs, "📜 Log")
         self.tabs.addTab(self.models, "🤖 Modelli")
-        self.tabs.addTab(self.cloud_locale, "☁️ Cloud Locale")
+        self.tabs.addTab(self.archivio, "📁 Archivio")
         self.tabs.addTab(self.tts_widget, "🔊 Voce")
         self.tabs.addTab(self.config, "⚙️ Configurazione")
         self.tabs.addTab(self.info_widget, "ℹ️ Informazioni")
 
         layout.addWidget(self.tabs)
 
+        # Barra inferiore con info + controlli
+        bottom_bar = QHBoxLayout()
+        bottom_bar.setContentsMargins(10, 5, 10, 5)
+        bottom_bar.setSpacing(15)
+
+        # === SINISTRA: Status QR-Code LAN ===
+        self.qr_status_label = QLabel("QR-Code LAN: --")
+        self.qr_status_label.setStyleSheet("font-size: 10px; color: #7f8c8d;")
+        bottom_bar.addWidget(self.qr_status_label)
+
+        bottom_bar.addStretch()
+
+        # === DESTRA: Font size + Dark mode ===
+        font_label = QLabel("Font:")
+        font_label.setStyleSheet("font-size: 10px; color: #7f8c8d;")
+        bottom_bar.addWidget(font_label)
+
+        self.font_minus_btn = QPushButton("−")
+        self.font_minus_btn.setFixedSize(24, 24)
+        self.font_minus_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 14px; font-weight: bold;
+                border: 1px solid #bdc3c7; border-radius: 4px;
+                background: #ecf0f1;
+            }
+            QPushButton:hover { background: #3498db; color: white; }
+        """)
+        self.font_minus_btn.clicked.connect(self.decrease_font_size)
+        bottom_bar.addWidget(self.font_minus_btn)
+
+        self.font_size_label = QLabel("100%")
+        self.font_size_label.setStyleSheet("font-size: 10px; min-width: 35px; text-align: center;")
+        self.font_size_label.setAlignment(Qt.AlignCenter)
+        bottom_bar.addWidget(self.font_size_label)
+
+        self.font_plus_btn = QPushButton("+")
+        self.font_plus_btn.setFixedSize(24, 24)
+        self.font_plus_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 14px; font-weight: bold;
+                border: 1px solid #bdc3c7; border-radius: 4px;
+                background: #ecf0f1;
+            }
+            QPushButton:hover { background: #3498db; color: white; }
+        """)
+        self.font_plus_btn.clicked.connect(self.increase_font_size)
+        bottom_bar.addWidget(self.font_plus_btn)
+
+        # Separatore
+        sep = QFrame()
+        sep.setFrameShape(QFrame.VLine)
+        sep.setStyleSheet("color: #bdc3c7;")
+        bottom_bar.addWidget(sep)
+
+        self.dark_mode_btn = QPushButton("🌙 Dark Mode")
+        self.dark_mode_btn.setCheckable(True)
+        self.dark_mode_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 10px;
+                padding: 5px 10px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background: #ecf0f1;
+            }
+            QPushButton:checked {
+                background: #2c3e50;
+                color: white;
+                border-color: #2c3e50;
+            }
+        """)
+        self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
+        bottom_bar.addWidget(self.dark_mode_btn)
+
+        layout.addLayout(bottom_bar)
+
         # Status bar
         self.statusBar().showMessage("Pronto")
+        self.is_dark_mode = False
+
+        # Font size settings
+        self.settings = QSettings("OpenWebUI", "Manager")
+        self.base_font_size = 10  # Font size di base
+        self.font_scale = self.settings.value("font_scale", 100, type=int)
+        self.font_save_timer = QTimer()
+        self.font_save_timer.setSingleShot(True)
+        self.font_save_timer.timeout.connect(self.save_font_setting)
+        self.apply_font_scale()
+
+        # Timer per aggiornare status QR-Code LAN
+        QTimer.singleShot(500, self.update_qr_status)
 
     def setup_tray(self):
         """Configura icona nel system tray"""
@@ -2344,6 +2688,127 @@ class MainWindow(QMainWindow):
         else:
             subprocess.Popen(['xdg-open', url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    def toggle_dark_mode(self):
+        """Attiva/disattiva dark mode"""
+        self.is_dark_mode = self.dark_mode_btn.isChecked()
+        if self.is_dark_mode:
+            self.dark_mode_btn.setText("☀️ Light Mode")
+            self.setStyleSheet("""
+                QMainWindow { background-color: #1a1a2e; }
+                QWidget { background-color: #1a1a2e; color: #eaeaea; }
+                QGroupBox {
+                    background-color: #16213e;
+                    border: 1px solid #0f3460;
+                    border-radius: 8px;
+                    margin-top: 12px;
+                    padding: 15px;
+                    color: #eaeaea;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 15px;
+                    padding: 0 5px;
+                    color: #e94560;
+                }
+                QListWidget {
+                    background-color: #16213e;
+                    border: 1px solid #0f3460;
+                    border-radius: 6px;
+                    color: #eaeaea;
+                }
+                QLineEdit, QComboBox {
+                    padding: 8px;
+                    border: 1px solid #0f3460;
+                    border-radius: 6px;
+                    background: #16213e;
+                    color: #eaeaea;
+                }
+                QLineEdit:focus, QComboBox:focus { border-color: #e94560; }
+                QTextEdit {
+                    background-color: #16213e;
+                    border: 1px solid #0f3460;
+                    color: #eaeaea;
+                }
+                QLabel { color: #eaeaea; }
+                QTabWidget::pane { border: none; background: transparent; }
+                QTabBar::tab {
+                    background: #16213e;
+                    border: none;
+                    padding: 12px 20px;
+                    margin-right: 2px;
+                    border-top-left-radius: 6px;
+                    border-top-right-radius: 6px;
+                    color: #eaeaea;
+                }
+                QTabBar::tab:selected {
+                    background: #0f3460;
+                    color: #e94560;
+                    font-weight: bold;
+                }
+                QTabBar::tab:hover:!selected { background: #1a1a2e; }
+                QPushButton {
+                    background-color: #16213e;
+                    border: 1px solid #0f3460;
+                    color: #eaeaea;
+                }
+                QPushButton:hover { background-color: #0f3460; }
+                QTableWidget {
+                    background-color: #16213e;
+                    gridline-color: #0f3460;
+                    color: #eaeaea;
+                }
+                QHeaderView::section {
+                    background-color: #0f3460;
+                    color: #eaeaea;
+                    border: 1px solid #16213e;
+                }
+            """)
+        else:
+            self.dark_mode_btn.setText("🌙 Dark Mode")
+            self.setStyleSheet("""
+                QMainWindow { background-color: #f5f6fa; }
+                QGroupBox {
+                    background-color: white;
+                    border: 1px solid #dcdde1;
+                    border-radius: 8px;
+                    margin-top: 12px;
+                    padding: 15px;
+                }
+                QGroupBox::title {
+                    subcontrol-origin: margin;
+                    left: 15px;
+                    padding: 0 5px;
+                    color: #2c3e50;
+                }
+                QListWidget {
+                    border: 1px solid #dcdde1;
+                    border-radius: 6px;
+                    padding: 5px;
+                }
+                QLineEdit, QComboBox {
+                    padding: 8px;
+                    border: 1px solid #dcdde1;
+                    border-radius: 6px;
+                    background: white;
+                }
+                QLineEdit:focus, QComboBox:focus { border-color: #3498db; }
+                QTabWidget::pane { border: none; background: transparent; }
+                QTabBar::tab {
+                    background: #ecf0f1;
+                    border: none;
+                    padding: 12px 20px;
+                    margin-right: 2px;
+                    border-top-left-radius: 6px;
+                    border-top-right-radius: 6px;
+                }
+                QTabBar::tab:selected {
+                    background: white;
+                    color: #3498db;
+                    font-weight: bold;
+                }
+                QTabBar::tab:hover:!selected { background: #dfe6e9; }
+            """)
+
     def start_status_checker(self):
         """Avvia il thread per controllare lo stato"""
         self.status_checker = StatusChecker()
@@ -2353,11 +2818,10 @@ class MainWindow(QMainWindow):
     def update_status(self, status):
         self.dashboard.update_status(status)
 
-        # Aggiorna status bar
+        # Aggiorna status bar (senza TTS, che è nella barra inferiore)
         ollama = "✓" if status.get('ollama') else "✗"
         webui = "✓" if status.get('openwebui') else "✗"
-        tts = "✓" if status.get('tts') else "✗"
-        self.statusBar().showMessage(f"Ollama: {ollama}  |  Open WebUI: {webui}  |  TTS: {tts}")
+        self.statusBar().showMessage(f"Ollama: {ollama}  |  Open WebUI: {webui}")
 
     def run_command(self, command, message="Esecuzione..."):
         """Esegue un comando in background"""
@@ -2382,6 +2846,62 @@ class MainWindow(QMainWindow):
         # Aggiorna lista modelli se siamo nella tab modelli
         if self.tabs.currentWidget() == self.models:
             QTimer.singleShot(1000, self.models.refresh_models)
+
+    def increase_font_size(self):
+        """Aumenta la dimensione del font (max 150%)"""
+        if self.font_scale < 150:
+            self.font_scale += 10
+            self.apply_font_scale()
+            self.font_save_timer.start(10000)  # Salva dopo 10 secondi
+
+    def decrease_font_size(self):
+        """Diminuisce la dimensione del font (min 70%)"""
+        if self.font_scale > 70:
+            self.font_scale -= 10
+            self.apply_font_scale()
+            self.font_save_timer.start(10000)  # Salva dopo 10 secondi
+
+    def apply_font_scale(self):
+        """Applica la scala del font a tutta l'applicazione"""
+        self.font_size_label.setText(f"{self.font_scale}%")
+        scaled_size = int(self.base_font_size * self.font_scale / 100)
+
+        # Usa stylesheet globale per forzare il font-size su tutti i widget
+        app = QApplication.instance()
+        current_style = app.styleSheet() or ""
+
+        # Rimuovi eventuali font-size precedenti
+        import re
+        current_style = re.sub(r'\* \{ font-size: \d+px; \}', '', current_style)
+
+        # Aggiungi nuovo font-size globale
+        global_font_style = f"* {{ font-size: {scaled_size}px; }}"
+        app.setStyleSheet(global_font_style + current_style)
+
+        # Applica anche con setFont per i widget che non rispettano lo stylesheet
+        font = QFont()
+        font.setPointSize(scaled_size)
+        app.setFont(font)
+
+        # Forza aggiornamento visuale
+        for widget in app.allWidgets():
+            widget.update()
+
+        self.update()
+        self.repaint()
+
+    def save_font_setting(self):
+        """Salva la preferenza del font"""
+        self.settings.setValue("font_scale", self.font_scale)
+        self.statusBar().showMessage(f"Font {self.font_scale}% salvato come predefinito", 3000)
+
+    def update_qr_status(self):
+        """Aggiorna lo status QR-Code LAN nella barra inferiore"""
+        qr_enabled = self.config.qr_checkbox.isChecked() if hasattr(self.config, 'qr_checkbox') else False
+        qr_icon = "✓" if qr_enabled else "✗"
+        self.qr_status_label.setText(f"QR-Code LAN: {qr_icon}")
+        # Aggiorna ogni 5 secondi
+        QTimer.singleShot(5000, self.update_qr_status)
 
     def closeEvent(self, event):
         """Minimizza nel tray invece di chiudere"""
