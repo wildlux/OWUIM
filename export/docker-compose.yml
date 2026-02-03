@@ -6,7 +6,7 @@ services:
       - "3000:8080"
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - WEBUI_SECRET_KEY=ollama-webui-secret-key-2024
+      - WEBUI_SECRET_KEY=change-this-to-a-secure-random-key
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
