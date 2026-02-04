@@ -2669,16 +2669,49 @@ class MCPWidget(QWidget):
         layout.addLayout(row3)
 
         # ╔════════════════════════════════════════════════════════════╗
-        # ║  RIGA 4: Info requisiti (compatta)                        ║
+        # ║  RIGA 4: Test Rapidi                                      ║
         # ╚════════════════════════════════════════════════════════════╝
-        info_label = QLabel(
-            "<span style='font-size: 9px; color: #888;'>"
-            "📋 <b>Requisiti:</b> RAM 8GB+ | VRAM 4GB+ (per Image Analysis) | "
-            "Solo MCP Bridge: 512MB RAM"
-            "</span>"
-        )
-        info_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(info_label)
+        test_group = QGroupBox("🧪 Test Rapidi")
+        test_main_layout = QVBoxLayout(test_group)
+        test_main_layout.setSpacing(8)
+        test_main_layout.setContentsMargins(10, 12, 10, 10)
+
+        # Riga input testo
+        text_row = QHBoxLayout()
+        text_row.addWidget(QLabel("Testo:"))
+        self.test_text_input = QLineEdit("Ciao, questo è un test!")
+        self.test_text_input.setPlaceholderText("Inserisci testo per il test TTS...")
+        text_row.addWidget(self.test_text_input, 1)
+        test_main_layout.addLayout(text_row)
+
+        # Riga pulsanti test
+        test_buttons = QHBoxLayout()
+        test_buttons.setSpacing(8)
+
+        test_tts_btn = ModernButton("🔊 Test TTS", "green")
+        test_tts_btn.clicked.connect(self.run_test_tts)
+        test_buttons.addWidget(test_tts_btn)
+
+        test_services_btn = ModernButton("🔍 Check Servizi", "blue")
+        test_services_btn.clicked.connect(self.run_test_services)
+        test_buttons.addWidget(test_services_btn)
+
+        open_docs_btn = ModernButton("📚 Apri Swagger", "purple")
+        open_docs_btn.clicked.connect(lambda: webbrowser.open(f"{self.mcp_service_url}/docs"))
+        test_buttons.addWidget(open_docs_btn)
+
+        test_buttons.addStretch()
+        test_main_layout.addLayout(test_buttons)
+
+        # Area risultato test
+        self.test_result = QTextEdit()
+        self.test_result.setReadOnly(True)
+        self.test_result.setMaximumHeight(60)
+        self.test_result.setStyleSheet("font-size: 10px; font-family: monospace; background-color: #f8f9fa;")
+        self.test_result.setPlaceholderText("I risultati dei test appariranno qui...")
+        test_main_layout.addWidget(self.test_result)
+
+        layout.addWidget(test_group)
 
         layout.addStretch()
 
@@ -3024,6 +3057,69 @@ class MCPWidget(QWidget):
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
         QMessageBox.information(self, "Copiato", f"Copiato negli appunti:\n{text}")
+
+    def run_test_tts(self):
+        """Esegue test TTS via MCP Bridge."""
+        text = self.test_text_input.text().strip()
+        if not text:
+            text = "Ciao, questo è un test!"
+
+        self.test_result.setPlainText("⏳ Test TTS in corso...")
+
+        try:
+            import requests
+            resp = requests.post(
+                f"{self.mcp_service_url}/test/tts",
+                params={"text": text},
+                timeout=30
+            )
+            data = resp.json()
+
+            if data.get("success"):
+                result = (
+                    f"✅ TTS OK!\n"
+                    f"Voce: {data.get('voice', 'N/A')}\n"
+                    f"Audio: {data.get('audio_size', 0)} bytes\n"
+                    f"File: {data.get('audio_path', 'N/A')}"
+                )
+                self.test_result.setPlainText(result)
+
+                # Prova a riprodurre l'audio
+                audio_path = data.get('audio_path')
+                if audio_path and os.path.exists(audio_path):
+                    if IS_WINDOWS:
+                        os.startfile(audio_path)
+                    else:
+                        subprocess.Popen(["xdg-open", audio_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                self.test_result.setPlainText(f"❌ Errore TTS:\n{data.get('error', 'Errore sconosciuto')}")
+
+        except requests.exceptions.ConnectionError:
+            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\nAvvia il servizio prima di testare.")
+        except Exception as e:
+            self.test_result.setPlainText(f"❌ Errore: {e}")
+
+    def run_test_services(self):
+        """Verifica stato di tutti i servizi."""
+        self.test_result.setPlainText("⏳ Verifica servizi in corso...")
+
+        try:
+            import requests
+            resp = requests.get(f"{self.mcp_service_url}/services", timeout=5)
+            data = resp.json()
+
+            lines = ["📊 Stato Servizi:\n"]
+            for name, info in data.items():
+                status = "✅" if info.get("available") else "❌"
+                port = info.get("port", "?")
+                lines.append(f"{status} {name.upper()}: porta {port}")
+
+            self.test_result.setPlainText("\n".join(lines))
+
+        except requests.exceptions.ConnectionError:
+            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\nAvvia il servizio prima di testare.")
+        except Exception as e:
+            self.test_result.setPlainText(f"❌ Errore: {e}")
 
     def open_readme(self):
         """Apre il README del servizio MCP."""
