@@ -37,6 +37,11 @@ ollama-webui/
 │   ├── start_document_service.bat  # Avvia (Windows)
 │   ├── start_document_service.sh   # Avvia (Linux)
 │   └── README.md            # Documentazione
+├── mcp_service/             # Servizio MCP Bridge
+│   ├── mcp_service.py       # Servizio FastAPI + MCP (:5558)
+│   ├── start_mcp_service.bat    # Avvia (Windows)
+│   ├── start_mcp_service.sh     # Avvia (Linux)
+│   └── README.md            # Documentazione
 ├── scripts/                 # Script gestione (install_tools, backup, LAN)
 ├── docs/                    # Documentazione
 ├── ICONA/                   # Icone applicazione
@@ -309,6 +314,73 @@ curl -X POST -F "file=@documento.docx" http://localhost:5557/extract-text
 ```
 
 **Tool Open WebUI:** `tools/document_reader.py`
+
+## MCP Bridge Service
+
+Servizio che espone i servizi locali (TTS, Image, Document) tramite **Model Context Protocol (MCP)**.
+
+### Avvio
+
+```bash
+# Dalla cartella mcp_service/
+cd mcp_service
+start_mcp_service.bat    # Windows
+./start_mcp_service.sh   # Linux
+
+# Requisiti
+pip install fastapi uvicorn requests sse-starlette
+pip install mcp  # Opzionale, per protocollo MCP nativo
+```
+
+### Architettura
+
+```
+┌─────────────────────────────────────────────────────┐
+│              MCP Bridge Service (:5558)             │
+├─────────────────────────────────────────────────────┤
+│  TTS Tools  │  Image Tools  │  Document Tools       │
+└──────┬──────┴───────┬───────┴────────┬──────────────┘
+       │              │                │
+       ▼              ▼                ▼
+   TTS :5556    Image :5555     Document :5557
+```
+
+### Tools MCP Disponibili
+
+| Categoria | Tools |
+|-----------|-------|
+| TTS | `tts_speak`, `tts_list_voices`, `tts_list_backends` |
+| Image | `image_analyze`, `image_describe`, `image_extract_text`, `image_list_models` |
+| Document | `document_read`, `document_extract_text`, `document_summary`, `document_formats` |
+| Utility | `check_services` |
+
+### Integrazione Claude Desktop
+
+Aggiungi al file `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ollama-webui": {
+      "command": "python",
+      "args": ["/percorso/mcp_service/mcp_service.py"]
+    }
+  }
+}
+```
+
+### Test
+
+```bash
+# Health check
+curl http://localhost:5558/
+
+# Lista tools
+curl http://localhost:5558/tools
+
+# Test TTS
+curl -X POST "http://localhost:5558/test/tts?text=Ciao"
+```
 
 ## Note
 

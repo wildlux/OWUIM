@@ -2438,6 +2438,627 @@ class InfoWidget(QWidget):
         layout.addStretch()
 
 
+class MCPWidget(QWidget):
+    """Widget per gestire il servizio MCP Bridge."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.main_window = parent
+        self.mcp_service_url = "http://localhost:5558"
+        self.setup_ui()
+
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # ScrollArea per contenuto
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        content = QWidget()
+        layout = QVBoxLayout(content)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        # === WARNING BOX ===
+        warning_group = QGroupBox("⚠️ Avviso Importante")
+        warning_group.setStyleSheet("""
+            QGroupBox {
+                background-color: #fff3cd;
+                border: 2px solid #ffc107;
+                border-radius: 8px;
+            }
+            QGroupBox::title {
+                color: #856404;
+            }
+        """)
+        warning_layout = QVBoxLayout(warning_group)
+        warning_layout.setContentsMargins(10, 12, 10, 10)
+
+        warning_label = QLabel(
+            "<b style='color: #856404;'>Il servizio MCP richiede risorse di sistema significative.</b><br>"
+            "<span style='color: #856404; font-size: 11px;'>"
+            "Se il PC non ha abbastanza RAM o VRAM, il sistema potrebbe rallentare "
+            "o bloccarsi temporaneamente. Verifica le risorse prima di avviare.</span>"
+        )
+        warning_label.setWordWrap(True)
+        warning_layout.addWidget(warning_label)
+        layout.addWidget(warning_group)
+
+        # === RISORSE SISTEMA ===
+        resources_group = QGroupBox("📊 Risorse Sistema")
+        resources_layout = QVBoxLayout(resources_group)
+        resources_layout.setSpacing(6)
+        resources_layout.setContentsMargins(10, 12, 10, 10)
+
+        # RAM
+        ram_row = QHBoxLayout()
+        ram_row.addWidget(QLabel("<b>RAM:</b>"))
+        self.ram_label = QLabel("Rilevamento...")
+        self.ram_label.setStyleSheet("font-family: monospace;")
+        ram_row.addWidget(self.ram_label)
+        ram_row.addStretch()
+        self.ram_status = QLabel("●")
+        self.ram_status.setFont(QFont("Arial", 12))
+        ram_row.addWidget(self.ram_status)
+        resources_layout.addLayout(ram_row)
+
+        # VRAM
+        vram_row = QHBoxLayout()
+        vram_row.addWidget(QLabel("<b>VRAM (GPU):</b>"))
+        self.vram_label = QLabel("Rilevamento...")
+        self.vram_label.setStyleSheet("font-family: monospace;")
+        vram_row.addWidget(self.vram_label)
+        vram_row.addStretch()
+        self.vram_status = QLabel("●")
+        self.vram_status.setFont(QFont("Arial", 12))
+        vram_row.addWidget(self.vram_status)
+        resources_layout.addLayout(vram_row)
+
+        # Requisiti minimi
+        req_label = QLabel(
+            "<hr><b>Requisiti minimi consigliati:</b><br>"
+            "• RAM: 8 GB (16 GB consigliati)<br>"
+            "• VRAM: 4 GB per Image Analysis con LLaVA (8 GB consigliati)<br>"
+            "• Solo MCP Bridge: 512 MB RAM"
+        )
+        req_label.setStyleSheet("font-size: 10px; color: #666; margin-top: 8px;")
+        req_label.setWordWrap(True)
+        resources_layout.addWidget(req_label)
+
+        # Pulsante aggiorna risorse
+        refresh_res_btn = ModernButton("🔄 Rileva Risorse", "gray")
+        refresh_res_btn.clicked.connect(self.detect_system_resources)
+        resources_layout.addWidget(refresh_res_btn)
+
+        layout.addWidget(resources_group)
+
+        # === STATO SERVIZIO ===
+        status_group = QGroupBox("MCP Bridge Service")
+        status_main_layout = QVBoxLayout(status_group)
+        status_main_layout.setSpacing(8)
+        status_main_layout.setContentsMargins(10, 12, 10, 10)
+
+        # Info descrizione
+        info_label = QLabel(
+            "<b>Model Context Protocol (MCP)</b> - Bridge per integrare i servizi locali "
+            "(TTS, Image Analysis, Document) con client MCP come Claude Desktop."
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("font-size: 11px; color: #555; margin-bottom: 8px;")
+        status_main_layout.addWidget(info_label)
+
+        # Riga stato + pulsanti
+        status_row = QHBoxLayout()
+        self.status_indicator = QLabel("●")
+        self.status_indicator.setFont(QFont("Arial", 14))
+        self.status_indicator.setStyleSheet("color: #bdc3c7;")
+        status_row.addWidget(self.status_indicator)
+
+        self.status_label = QLabel("Non avviato")
+        self.status_label.setFont(QFont("Arial", 10))
+        status_row.addWidget(self.status_label)
+        status_row.addStretch()
+
+        self.start_service_btn = ModernButton("🚀 Avvia Servizio", "green")
+        self.start_service_btn.clicked.connect(self.confirm_and_start_mcp_service)
+        status_row.addWidget(self.start_service_btn)
+
+        self.stop_service_btn = ModernButton("⏹️ Ferma", "red")
+        self.stop_service_btn.clicked.connect(self.stop_mcp_service)
+        self.stop_service_btn.setEnabled(False)
+        status_row.addWidget(self.stop_service_btn)
+
+        self.refresh_btn = ModernButton("🔄", "gray")
+        self.refresh_btn.setFixedWidth(40)
+        self.refresh_btn.clicked.connect(self.check_service_status)
+        status_row.addWidget(self.refresh_btn)
+
+        status_main_layout.addLayout(status_row)
+        layout.addWidget(status_group)
+
+        # === SERVIZI COLLEGATI ===
+        services_group = QGroupBox("Servizi Collegati")
+        services_layout = QVBoxLayout(services_group)
+        services_layout.setSpacing(6)
+        services_layout.setContentsMargins(10, 12, 10, 10)
+
+        # TTS Service
+        tts_row = QHBoxLayout()
+        self.tts_status = QLabel("●")
+        self.tts_status.setFixedWidth(14)
+        self.tts_status.setStyleSheet("color: #bdc3c7;")
+        tts_row.addWidget(self.tts_status)
+        tts_row.addWidget(QLabel("🔊 <b>TTS Service</b> (porta 5556)"))
+        tts_row.addStretch()
+        services_layout.addLayout(tts_row)
+
+        # Image Service
+        img_row = QHBoxLayout()
+        self.img_status = QLabel("●")
+        self.img_status.setFixedWidth(14)
+        self.img_status.setStyleSheet("color: #bdc3c7;")
+        img_row.addWidget(self.img_status)
+        img_row.addWidget(QLabel("🖼️ <b>Image Analysis</b> (porta 5555)"))
+        img_row.addStretch()
+        services_layout.addLayout(img_row)
+
+        # Document Service
+        doc_row = QHBoxLayout()
+        self.doc_status = QLabel("●")
+        self.doc_status.setFixedWidth(14)
+        self.doc_status.setStyleSheet("color: #bdc3c7;")
+        doc_row.addWidget(self.doc_status)
+        doc_row.addWidget(QLabel("📄 <b>Document Service</b> (porta 5557)"))
+        doc_row.addStretch()
+        services_layout.addLayout(doc_row)
+
+        layout.addWidget(services_group)
+
+        # === TOOLS MCP ===
+        tools_group = QGroupBox("Tools MCP Disponibili")
+        tools_layout = QVBoxLayout(tools_group)
+        tools_layout.setSpacing(6)
+        tools_layout.setContentsMargins(10, 12, 10, 10)
+
+        self.tools_list = QTextEdit()
+        self.tools_list.setReadOnly(True)
+        self.tools_list.setMaximumHeight(120)
+        self.tools_list.setStyleSheet("font-size: 10px; font-family: monospace;")
+        self.tools_list.setPlainText("Avvia il servizio per vedere i tools disponibili...")
+        tools_layout.addWidget(self.tools_list)
+
+        layout.addWidget(tools_group)
+
+        # === USO IN LAN ===
+        lan_group = QGroupBox("🌐 Accesso LAN")
+        lan_layout = QVBoxLayout(lan_group)
+        lan_layout.setSpacing(8)
+        lan_layout.setContentsMargins(10, 12, 10, 10)
+
+        # Ottieni IP locale
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except:
+            local_ip = "localhost"
+
+        lan_info = QLabel(
+            f"<b>Endpoint API (REST):</b><br>"
+            f"• Locale: <code>http://localhost:5558</code><br>"
+            f"• LAN: <code>http://{local_ip}:5558</code><br><br>"
+            f"<b>Tutti i client nella rete locale possono usare questi endpoint.</b>"
+        )
+        lan_info.setWordWrap(True)
+        lan_info.setStyleSheet("font-size: 11px;")
+        lan_info.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lan_layout.addWidget(lan_info)
+
+        # Esempi di utilizzo
+        examples_label = QLabel(
+            "<b>Esempi chiamate API:</b>"
+        )
+        examples_label.setStyleSheet("font-size: 11px; margin-top: 8px;")
+        lan_layout.addWidget(examples_label)
+
+        self.examples_text = QTextEdit()
+        self.examples_text.setReadOnly(True)
+        self.examples_text.setMaximumHeight(80)
+        self.examples_text.setStyleSheet("font-size: 10px; font-family: monospace;")
+        self.examples_text.setPlainText(
+f'''# Test TTS
+curl -X POST "http://{local_ip}:5558/test/tts?text=Ciao"
+
+# Lista servizi
+curl http://{local_ip}:5558/services'''
+        )
+        lan_layout.addWidget(self.examples_text)
+
+        copy_btn = ModernButton("📋 Copia URL LAN", "blue")
+        copy_btn.clicked.connect(lambda: self._copy_to_clipboard(f"http://{local_ip}:5558"))
+        lan_layout.addWidget(copy_btn)
+
+        layout.addWidget(lan_group)
+
+        # === API DOCS ===
+        api_group = QGroupBox("API & Documentazione")
+        api_layout = QHBoxLayout(api_group)
+        api_layout.setContentsMargins(10, 12, 10, 10)
+
+        docs_btn = ModernButton("📚 Swagger Docs", "purple")
+        docs_btn.clicked.connect(lambda: webbrowser.open(f"{self.mcp_service_url}/docs"))
+        api_layout.addWidget(docs_btn)
+
+        readme_btn = ModernButton("📖 README", "gray")
+        readme_btn.clicked.connect(self.open_readme)
+        api_layout.addWidget(readme_btn)
+
+        api_layout.addStretch()
+        layout.addWidget(api_group)
+
+        layout.addStretch()
+
+        scroll.setWidget(content)
+        main_layout.addWidget(scroll)
+
+        # Rileva risorse all'avvio
+        QTimer.singleShot(500, self.detect_system_resources)
+
+        # NO auto-check - l'utente deve avviare manualmente
+        # Il timer parte solo dopo l'avvio del servizio
+
+    def detect_system_resources(self):
+        """Rileva RAM e VRAM disponibili."""
+        # Rileva RAM
+        try:
+            if IS_WINDOWS:
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                c_ulonglong = ctypes.c_ulonglong
+                class MEMORYSTATUSEX(ctypes.Structure):
+                    _fields_ = [
+                        ('dwLength', ctypes.c_ulong),
+                        ('dwMemoryLoad', ctypes.c_ulong),
+                        ('ullTotalPhys', c_ulonglong),
+                        ('ullAvailPhys', c_ulonglong),
+                        ('ullTotalPageFile', c_ulonglong),
+                        ('ullAvailPageFile', c_ulonglong),
+                        ('ullTotalVirtual', c_ulonglong),
+                        ('ullAvailVirtual', c_ulonglong),
+                        ('ullAvailExtendedVirtual', c_ulonglong),
+                    ]
+                stat = MEMORYSTATUSEX()
+                stat.dwLength = ctypes.sizeof(stat)
+                kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+                total_ram = stat.ullTotalPhys / (1024**3)
+                avail_ram = stat.ullAvailPhys / (1024**3)
+            else:
+                with open('/proc/meminfo', 'r') as f:
+                    meminfo = f.read()
+                total_match = [line for line in meminfo.split('\n') if 'MemTotal' in line]
+                avail_match = [line for line in meminfo.split('\n') if 'MemAvailable' in line]
+                total_ram = int(total_match[0].split()[1]) / (1024**2) if total_match else 0
+                avail_ram = int(avail_match[0].split()[1]) / (1024**2) if avail_match else 0
+
+            self.ram_label.setText(f"{avail_ram:.1f} GB liberi / {total_ram:.1f} GB totali")
+            self.total_ram = total_ram
+            self.avail_ram = avail_ram
+
+            # Stato RAM
+            if avail_ram >= 8:
+                self.ram_status.setStyleSheet("color: #27ae60;")  # Verde
+                self.ram_risk = "basso"
+            elif avail_ram >= 4:
+                self.ram_status.setStyleSheet("color: #f39c12;")  # Arancione
+                self.ram_risk = "medio"
+            else:
+                self.ram_status.setStyleSheet("color: #e74c3c;")  # Rosso
+                self.ram_risk = "alto"
+
+        except Exception as e:
+            self.ram_label.setText(f"Errore: {e}")
+            self.ram_status.setStyleSheet("color: #bdc3c7;")
+            self.total_ram = 0
+            self.avail_ram = 0
+            self.ram_risk = "sconosciuto"
+
+        # Rileva VRAM (GPU NVIDIA)
+        try:
+            result = subprocess.run(
+                ['nvidia-smi', '--query-gpu=memory.total,memory.free,name', '--format=csv,noheader,nounits'],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                if lines and lines[0]:
+                    parts = lines[0].split(', ')
+                    total_vram = int(parts[0]) / 1024  # MB to GB
+                    free_vram = int(parts[1]) / 1024
+                    gpu_name = parts[2] if len(parts) > 2 else "GPU"
+                    self.vram_label.setText(f"{free_vram:.1f} GB liberi / {total_vram:.1f} GB ({gpu_name})")
+                    self.total_vram = total_vram
+                    self.free_vram = free_vram
+
+                    # Stato VRAM
+                    if free_vram >= 6:
+                        self.vram_status.setStyleSheet("color: #27ae60;")
+                        self.vram_risk = "basso"
+                    elif free_vram >= 3:
+                        self.vram_status.setStyleSheet("color: #f39c12;")
+                        self.vram_risk = "medio"
+                    else:
+                        self.vram_status.setStyleSheet("color: #e74c3c;")
+                        self.vram_risk = "alto"
+                else:
+                    raise Exception("Nessuna GPU rilevata")
+            else:
+                raise Exception("nvidia-smi non disponibile")
+        except Exception:
+            self.vram_label.setText("Non rilevata (no GPU NVIDIA o driver)")
+            self.vram_status.setStyleSheet("color: #bdc3c7;")
+            self.total_vram = 0
+            self.free_vram = 0
+            self.vram_risk = "N/A"
+
+    def get_risk_assessment(self):
+        """Calcola la valutazione del rischio complessivo."""
+        risks = []
+        risk_level = "BASSO"
+        color = "#27ae60"
+
+        # Verifica RAM
+        if hasattr(self, 'avail_ram'):
+            if self.avail_ram < 2:
+                risks.append("❌ RAM disponibile CRITICA (<2 GB) - ALTO RISCHIO DI FREEZE")
+                risk_level = "CRITICO"
+                color = "#c0392b"
+            elif self.avail_ram < 4:
+                risks.append("⚠️ RAM disponibile bassa (<4 GB) - Possibili rallentamenti")
+                if risk_level != "CRITICO":
+                    risk_level = "ALTO"
+                    color = "#e74c3c"
+            elif self.avail_ram < 8:
+                risks.append("⚡ RAM disponibile moderata (<8 GB) - Monitorare le prestazioni")
+                if risk_level not in ["CRITICO", "ALTO"]:
+                    risk_level = "MEDIO"
+                    color = "#f39c12"
+            else:
+                risks.append("✅ RAM sufficiente (≥8 GB)")
+
+        # Verifica VRAM (solo se si usa Image Analysis)
+        if hasattr(self, 'free_vram') and self.free_vram > 0:
+            if self.free_vram < 2:
+                risks.append("❌ VRAM bassa (<2 GB) - Image Analysis potrebbe causare freeze")
+                if risk_level not in ["CRITICO"]:
+                    risk_level = "ALTO"
+                    color = "#e74c3c"
+            elif self.free_vram < 4:
+                risks.append("⚠️ VRAM moderata (<4 GB) - LLaVA potrebbe essere lento")
+                if risk_level not in ["CRITICO", "ALTO"]:
+                    risk_level = "MEDIO"
+                    color = "#f39c12"
+            else:
+                risks.append("✅ VRAM sufficiente per Image Analysis")
+        else:
+            risks.append("ℹ️ Nessuna GPU NVIDIA - Image Analysis userà CPU (più lento)")
+
+        return risk_level, color, risks
+
+    def confirm_and_start_mcp_service(self):
+        """Mostra dialog di conferma con valutazione rischi prima di avviare."""
+        # Aggiorna le risorse
+        self.detect_system_resources()
+
+        # Calcola rischi
+        risk_level, color, risks = self.get_risk_assessment()
+
+        # Costruisci messaggio
+        risk_text = "\n".join(risks)
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("⚠️ Conferma Avvio MCP Service")
+        msg.setIcon(QMessageBox.Warning if risk_level in ["ALTO", "CRITICO"] else QMessageBox.Information)
+
+        detail_text = f"""
+<h3 style='color: {color};'>Livello di Rischio: {risk_level}</h3>
+
+<p><b>Valutazione Sistema:</b></p>
+<pre style='font-size: 11px;'>{risk_text}</pre>
+
+<hr>
+
+<p><b>Cosa succede avviando il servizio:</b></p>
+<ul>
+<li>Il servizio MCP Bridge userà ~200-500 MB di RAM</li>
+<li>Se Image Analysis è attivo, LLaVA userà 2-8 GB di VRAM</li>
+<li>Se la RAM/VRAM è insufficiente, il PC potrebbe rallentare o bloccarsi</li>
+</ul>
+
+<p><b>Raccomandazioni:</b></p>
+<ul>
+{"<li style='color: #c0392b;'><b>SCONSIGLIATO</b> - Chiudi altre applicazioni prima di procedere</li>" if risk_level == "CRITICO" else ""}
+{"<li style='color: #e74c3c;'>Chiudi browser e altre app pesanti prima di procedere</li>" if risk_level == "ALTO" else ""}
+{"<li>Monitora l'uso della memoria durante l'utilizzo</li>" if risk_level == "MEDIO" else ""}
+{"<li style='color: #27ae60;'>Il sistema sembra avere risorse sufficienti</li>" if risk_level == "BASSO" else ""}
+</ul>
+"""
+
+        msg.setTextFormat(Qt.RichText)
+        msg.setText(f"<b>Vuoi avviare il servizio MCP Bridge?</b>")
+        msg.setInformativeText(f"Livello di rischio: <b style='color: {color};'>{risk_level}</b>")
+        msg.setDetailedText(f"Risorse rilevate:\n- RAM libera: {getattr(self, 'avail_ram', 0):.1f} GB\n- VRAM libera: {getattr(self, 'free_vram', 0):.1f} GB\n\n{risk_text}")
+
+        # Pulsanti
+        if risk_level == "CRITICO":
+            msg.setStandardButtons(QMessageBox.Cancel)
+            force_btn = msg.addButton("⚠️ Avvia comunque (RISCHIOSO)", QMessageBox.AcceptRole)
+        else:
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No if risk_level in ["ALTO", "CRITICO"] else QMessageBox.Yes)
+
+        result = msg.exec_()
+
+        # Verifica risposta
+        if risk_level == "CRITICO":
+            if msg.clickedButton() and "Avvia" in msg.clickedButton().text():
+                self._do_start_mcp_service()
+        else:
+            if result == QMessageBox.Yes:
+                self._do_start_mcp_service()
+
+    def _do_start_mcp_service(self):
+        """Avvia effettivamente il servizio MCP."""
+        try:
+            # Usa il venv per avere MCP SDK disponibile
+            mcp_script = SCRIPT_DIR / "mcp_service" / "mcp_service.py"
+            if IS_WINDOWS:
+                python_exe = SCRIPT_DIR / "venv" / "Scripts" / "python.exe"
+                if python_exe.exists():
+                    subprocess.Popen(
+                        ["cmd", "/c", "start", "MCP Bridge", str(python_exe), str(mcp_script)],
+                        cwd=str(SCRIPT_DIR),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                else:
+                    # Fallback allo script batch
+                    script = SCRIPT_DIR / "mcp_service" / "start_mcp_service.bat"
+                    subprocess.Popen(
+                        ["cmd", "/c", "start", "", str(script)],
+                        cwd=str(SCRIPT_DIR),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+            else:
+                python_exe = SCRIPT_DIR / "venv" / "bin" / "python"
+                if python_exe.exists():
+                    subprocess.Popen(
+                        ["gnome-terminal", "--title=MCP Bridge", "--", str(python_exe), str(mcp_script)],
+                        cwd=str(SCRIPT_DIR),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                else:
+                    # Fallback allo script shell
+                    script = SCRIPT_DIR / "mcp_service" / "start_mcp_service.sh"
+                    subprocess.Popen(
+                        ["gnome-terminal", "--", "bash", str(script)],
+                        cwd=str(SCRIPT_DIR),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+            self.status_label.setText("Avvio in corso...")
+            self.status_indicator.setStyleSheet("color: #f39c12;")
+
+            # Avvia timer per check stato (solo dopo avvio manuale)
+            if not hasattr(self, 'check_timer') or not self.check_timer.isActive():
+                self.check_timer = QTimer()
+                self.check_timer.timeout.connect(self.check_service_status)
+                self.check_timer.start(5000)
+
+            QTimer.singleShot(3000, self.check_service_status)
+        except Exception as e:
+            QMessageBox.warning(self, "Errore", f"Impossibile avviare il servizio:\n{e}")
+
+    def stop_mcp_service(self):
+        """Ferma il servizio MCP."""
+        try:
+            # Trova e termina il processo
+            if IS_WINDOWS:
+                subprocess.run(["taskkill", "/f", "/im", "python.exe", "/fi", "WINDOWTITLE eq MCP*"],
+                              capture_output=True)
+            else:
+                subprocess.run(["pkill", "-f", "mcp_service.py"], capture_output=True)
+
+            self.status_label.setText("Servizio fermato")
+            self.status_indicator.setStyleSheet("color: #bdc3c7;")
+            self.stop_service_btn.setEnabled(False)
+            self.start_service_btn.setEnabled(True)
+
+            # Ferma il timer
+            if hasattr(self, 'check_timer'):
+                self.check_timer.stop()
+
+        except Exception as e:
+            QMessageBox.warning(self, "Errore", f"Impossibile fermare il servizio:\n{e}")
+
+    def check_service_status(self):
+        """Verifica lo stato del servizio MCP e dei servizi collegati."""
+        try:
+            import requests
+            resp = requests.get(self.mcp_service_url, timeout=3)
+            if resp.status_code == 200:
+                data = resp.json()
+                self.status_indicator.setStyleSheet("color: #27ae60;")
+                self.status_label.setText(f"Attivo - {data.get('tools_count', 0)} tools disponibili")
+                self.start_service_btn.setEnabled(False)
+                self.stop_service_btn.setEnabled(True)
+
+                # Aggiorna stato servizi
+                services = data.get("services", {})
+                self._update_service_status(self.tts_status, services.get("tts", {}).get("available", False))
+                self._update_service_status(self.img_status, services.get("image", {}).get("available", False))
+                self._update_service_status(self.doc_status, services.get("document", {}).get("available", False))
+
+                # Aggiorna lista tools
+                self._update_tools_list()
+            else:
+                self._set_offline()
+        except:
+            self._set_offline()
+
+    def _set_offline(self):
+        """Imposta stato offline."""
+        self.status_indicator.setStyleSheet("color: #bdc3c7;")
+        self.status_label.setText("Non attivo")
+        self.start_service_btn.setEnabled(True)
+        self.stop_service_btn.setEnabled(False)
+        self.tts_status.setStyleSheet("color: #bdc3c7;")
+        self.img_status.setStyleSheet("color: #bdc3c7;")
+        self.doc_status.setStyleSheet("color: #bdc3c7;")
+
+    def _update_service_status(self, indicator, available):
+        """Aggiorna indicatore servizio."""
+        if available:
+            indicator.setStyleSheet("color: #27ae60;")
+        else:
+            indicator.setStyleSheet("color: #e74c3c;")
+
+    def _update_tools_list(self):
+        """Aggiorna lista tools."""
+        try:
+            import requests
+            resp = requests.get(f"{self.mcp_service_url}/tools", timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                tools = data.get("tools", [])
+                text = "\n".join([f"• {t['name']}: {t['description']}" for t in tools])
+                self.tools_list.setPlainText(text if text else "Nessun tool disponibile")
+        except:
+            pass
+
+    def _copy_to_clipboard(self, text):
+        """Copia testo negli appunti."""
+        from PyQt5.QtWidgets import QApplication
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        QMessageBox.information(self, "Copiato", f"Copiato negli appunti:\n{text}")
+
+    def open_readme(self):
+        """Apre il README del servizio MCP."""
+        readme_path = SCRIPT_DIR / "mcp_service" / "README.md"
+        if readme_path.exists():
+            if IS_WINDOWS:
+                os.startfile(str(readme_path))
+            else:
+                subprocess.run(["xdg-open", str(readme_path)])
+        else:
+            QMessageBox.warning(self, "Errore", "README non trovato")
+
+
 class MainWindow(QMainWindow):
     """Finestra principale"""
     def __init__(self):
@@ -2522,6 +3143,7 @@ class MainWindow(QMainWindow):
         self.config = ConfigWidget(self)
         self.archivio = ArchivioWidget(self)
         self.tts_widget = TTSWidget(self)
+        self.mcp_widget = MCPWidget(self)
         self.info_widget = InfoWidget(self)
 
         self.tabs.addTab(self.dashboard, "🏠 Dashboard")
@@ -2529,6 +3151,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.models, "🤖 Modelli")
         self.tabs.addTab(self.archivio, "📁 Archivio")
         self.tabs.addTab(self.tts_widget, "🔊 Voce")
+        self.tabs.addTab(self.mcp_widget, "🔌 MCP")
         self.tabs.addTab(self.config, "⚙️ Configurazione")
         self.tabs.addTab(self.info_widget, "ℹ️ Informazioni")
 
