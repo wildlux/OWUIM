@@ -548,33 +548,6 @@ async def get_tools():
     }
 
 
-# MCP SSE endpoint
-if MCP_AVAILABLE:
-    from starlette.routing import Mount
-    from sse_starlette.sse import EventSourceResponse
-
-    @app.get("/mcp/sse")
-    async def mcp_sse_endpoint(request):
-        """Endpoint SSE per connessioni MCP"""
-        transport = SseServerTransport("/mcp/messages")
-
-        async def event_generator():
-            async with transport.connect_sse(
-                request.scope, request.receive, request._send
-            ) as streams:
-                await mcp_server.run(
-                    streams[0], streams[1], mcp_server.create_initialization_options()
-                )
-
-        return EventSourceResponse(event_generator())
-
-    @app.post("/mcp/messages")
-    async def mcp_messages_endpoint(request):
-        """Endpoint per messaggi MCP"""
-        # Gestito dal transport SSE
-        pass
-
-
 # ==================== CLI Test Endpoints ====================
 
 @app.post("/test/tts")
@@ -610,7 +583,7 @@ if __name__ == "__main__":
         print(f"    [{icon}] {status.get('name', name)} (:{status.get('port', '?')})")
     print()
     print(f"  API Docs: http://localhost:{SERVICE_PORT}/docs")
-    print(f"  MCP SSE:  http://localhost:{SERVICE_PORT}/mcp/sse")
+    print(f"  Tools:    http://localhost:{SERVICE_PORT}/tools")
     print("=" * 60)
 
     uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT)

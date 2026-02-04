@@ -2460,7 +2460,23 @@ class MCPWidget(QWidget):
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        # === WARNING BOX ===
+        # Ottieni IP locale (usato in più posti)
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            self.local_ip = s.getsockname()[0]
+            s.close()
+        except:
+            self.local_ip = "localhost"
+
+        # ╔════════════════════════════════════════════════════════════╗
+        # ║  RIGA 1: Warning (sinistra) | Risorse Sistema (destra)    ║
+        # ╚════════════════════════════════════════════════════════════╝
+        row1 = QHBoxLayout()
+        row1.setSpacing(10)
+
+        # === WARNING BOX (sinistra) ===
         warning_group = QGroupBox("⚠️ Avviso Importante")
         warning_group.setStyleSheet("""
             QGroupBox {
@@ -2476,26 +2492,26 @@ class MCPWidget(QWidget):
         warning_layout.setContentsMargins(10, 12, 10, 10)
 
         warning_label = QLabel(
-            "<b style='color: #856404;'>Il servizio MCP richiede risorse di sistema significative.</b><br>"
-            "<span style='color: #856404; font-size: 11px;'>"
-            "Se il PC non ha abbastanza RAM o VRAM, il sistema potrebbe rallentare "
-            "o bloccarsi temporaneamente. Verifica le risorse prima di avviare.</span>"
+            "<b style='color: #856404;'>Il servizio MCP richiede risorse di sistema.</b><br>"
+            "<span style='color: #856404; font-size: 10px;'>"
+            "Se il PC non ha abbastanza RAM o VRAM, il sistema potrebbe "
+            "rallentare o bloccarsi. Verifica le risorse prima di avviare.</span>"
         )
         warning_label.setWordWrap(True)
         warning_layout.addWidget(warning_label)
-        layout.addWidget(warning_group)
+        row1.addWidget(warning_group, 1)
 
-        # === RISORSE SISTEMA ===
+        # === RISORSE SISTEMA (destra) ===
         resources_group = QGroupBox("📊 Risorse Sistema")
         resources_layout = QVBoxLayout(resources_group)
-        resources_layout.setSpacing(6)
+        resources_layout.setSpacing(4)
         resources_layout.setContentsMargins(10, 12, 10, 10)
 
         # RAM
         ram_row = QHBoxLayout()
         ram_row.addWidget(QLabel("<b>RAM:</b>"))
-        self.ram_label = QLabel("Rilevamento...")
-        self.ram_label.setStyleSheet("font-family: monospace;")
+        self.ram_label = QLabel("--")
+        self.ram_label.setStyleSheet("font-family: monospace; font-size: 10px;")
         ram_row.addWidget(self.ram_label)
         ram_row.addStretch()
         self.ram_status = QLabel("●")
@@ -2505,9 +2521,9 @@ class MCPWidget(QWidget):
 
         # VRAM
         vram_row = QHBoxLayout()
-        vram_row.addWidget(QLabel("<b>VRAM (GPU):</b>"))
-        self.vram_label = QLabel("Rilevamento...")
-        self.vram_label.setStyleSheet("font-family: monospace;")
+        vram_row.addWidget(QLabel("<b>VRAM:</b>"))
+        self.vram_label = QLabel("--")
+        self.vram_label.setStyleSheet("font-family: monospace; font-size: 10px;")
         vram_row.addWidget(self.vram_label)
         vram_row.addStretch()
         self.vram_status = QLabel("●")
@@ -2515,69 +2531,58 @@ class MCPWidget(QWidget):
         vram_row.addWidget(self.vram_status)
         resources_layout.addLayout(vram_row)
 
-        # Requisiti minimi
-        req_label = QLabel(
-            "<hr><b>Requisiti minimi consigliati:</b><br>"
-            "• RAM: 8 GB (16 GB consigliati)<br>"
-            "• VRAM: 4 GB per Image Analysis con LLaVA (8 GB consigliati)<br>"
-            "• Solo MCP Bridge: 512 MB RAM"
-        )
-        req_label.setStyleSheet("font-size: 10px; color: #666; margin-top: 8px;")
-        req_label.setWordWrap(True)
-        resources_layout.addWidget(req_label)
-
-        # Pulsante aggiorna risorse
-        refresh_res_btn = ModernButton("🔄 Rileva Risorse", "gray")
+        # Pulsante aggiorna
+        refresh_res_btn = ModernButton("🔄 Rileva", "gray")
         refresh_res_btn.clicked.connect(self.detect_system_resources)
         resources_layout.addWidget(refresh_res_btn)
 
-        layout.addWidget(resources_group)
+        row1.addWidget(resources_group, 1)
+        layout.addLayout(row1)
 
-        # === STATO SERVIZIO ===
-        status_group = QGroupBox("MCP Bridge Service")
-        status_main_layout = QVBoxLayout(status_group)
-        status_main_layout.setSpacing(8)
+        # ╔════════════════════════════════════════════════════════════╗
+        # ║  RIGA 2: Stato Servizio (intera larghezza)                ║
+        # ╚════════════════════════════════════════════════════════════╝
+        status_group = QGroupBox("🔌 MCP Bridge Service (porta 5558)")
+        status_main_layout = QHBoxLayout(status_group)
+        status_main_layout.setSpacing(10)
         status_main_layout.setContentsMargins(10, 12, 10, 10)
 
-        # Info descrizione
-        info_label = QLabel(
-            "<b>Model Context Protocol (MCP)</b> - Bridge per integrare i servizi locali "
-            "(TTS, Image Analysis, Document) con client MCP come Claude Desktop."
-        )
-        info_label.setWordWrap(True)
-        info_label.setStyleSheet("font-size: 11px; color: #555; margin-bottom: 8px;")
-        status_main_layout.addWidget(info_label)
-
-        # Riga stato + pulsanti
-        status_row = QHBoxLayout()
+        # Indicatore stato
         self.status_indicator = QLabel("●")
-        self.status_indicator.setFont(QFont("Arial", 14))
+        self.status_indicator.setFont(QFont("Arial", 16))
         self.status_indicator.setStyleSheet("color: #bdc3c7;")
-        status_row.addWidget(self.status_indicator)
+        status_main_layout.addWidget(self.status_indicator)
 
         self.status_label = QLabel("Non avviato")
         self.status_label.setFont(QFont("Arial", 10))
-        status_row.addWidget(self.status_label)
-        status_row.addStretch()
+        status_main_layout.addWidget(self.status_label)
 
-        self.start_service_btn = ModernButton("🚀 Avvia Servizio", "green")
+        status_main_layout.addStretch()
+
+        # Pulsanti
+        self.start_service_btn = ModernButton("🚀 Avvia", "green")
         self.start_service_btn.clicked.connect(self.confirm_and_start_mcp_service)
-        status_row.addWidget(self.start_service_btn)
+        status_main_layout.addWidget(self.start_service_btn)
 
         self.stop_service_btn = ModernButton("⏹️ Ferma", "red")
         self.stop_service_btn.clicked.connect(self.stop_mcp_service)
         self.stop_service_btn.setEnabled(False)
-        status_row.addWidget(self.stop_service_btn)
+        status_main_layout.addWidget(self.stop_service_btn)
 
         self.refresh_btn = ModernButton("🔄", "gray")
         self.refresh_btn.setFixedWidth(40)
         self.refresh_btn.clicked.connect(self.check_service_status)
-        status_row.addWidget(self.refresh_btn)
+        status_main_layout.addWidget(self.refresh_btn)
 
-        status_main_layout.addLayout(status_row)
         layout.addWidget(status_group)
 
-        # === SERVIZI COLLEGATI ===
+        # ╔════════════════════════════════════════════════════════════╗
+        # ║  RIGA 3: Servizi (sx) | Tools + LAN (dx)                  ║
+        # ╚════════════════════════════════════════════════════════════╝
+        row3 = QHBoxLayout()
+        row3.setSpacing(10)
+
+        # === SERVIZI COLLEGATI (sinistra) ===
         services_group = QGroupBox("Servizi Collegati")
         services_layout = QVBoxLayout(services_group)
         services_layout.setSpacing(6)
@@ -2589,7 +2594,7 @@ class MCPWidget(QWidget):
         self.tts_status.setFixedWidth(14)
         self.tts_status.setStyleSheet("color: #bdc3c7;")
         tts_row.addWidget(self.tts_status)
-        tts_row.addWidget(QLabel("🔊 <b>TTS Service</b> (porta 5556)"))
+        tts_row.addWidget(QLabel("🔊 <b>TTS</b> :5556"))
         tts_row.addStretch()
         services_layout.addLayout(tts_row)
 
@@ -2599,7 +2604,7 @@ class MCPWidget(QWidget):
         self.img_status.setFixedWidth(14)
         self.img_status.setStyleSheet("color: #bdc3c7;")
         img_row.addWidget(self.img_status)
-        img_row.addWidget(QLabel("🖼️ <b>Image Analysis</b> (porta 5555)"))
+        img_row.addWidget(QLabel("🖼️ <b>Image</b> :5555"))
         img_row.addStretch()
         services_layout.addLayout(img_row)
 
@@ -2609,95 +2614,71 @@ class MCPWidget(QWidget):
         self.doc_status.setFixedWidth(14)
         self.doc_status.setStyleSheet("color: #bdc3c7;")
         doc_row.addWidget(self.doc_status)
-        doc_row.addWidget(QLabel("📄 <b>Document Service</b> (porta 5557)"))
+        doc_row.addWidget(QLabel("📄 <b>Document</b> :5557"))
         doc_row.addStretch()
         services_layout.addLayout(doc_row)
 
-        layout.addWidget(services_group)
+        services_layout.addStretch()
+        row3.addWidget(services_group, 1)
 
-        # === TOOLS MCP ===
+        # === COLONNA DESTRA: Tools + LAN ===
+        right_col = QVBoxLayout()
+        right_col.setSpacing(10)
+
+        # Tools MCP
         tools_group = QGroupBox("Tools MCP Disponibili")
         tools_layout = QVBoxLayout(tools_group)
-        tools_layout.setSpacing(6)
+        tools_layout.setSpacing(4)
         tools_layout.setContentsMargins(10, 12, 10, 10)
 
         self.tools_list = QTextEdit()
         self.tools_list.setReadOnly(True)
-        self.tools_list.setMaximumHeight(120)
-        self.tools_list.setStyleSheet("font-size: 10px; font-family: monospace;")
-        self.tools_list.setPlainText("Avvia il servizio per vedere i tools disponibili...")
+        self.tools_list.setMaximumHeight(80)
+        self.tools_list.setStyleSheet("font-size: 9px; font-family: monospace;")
+        self.tools_list.setPlainText("Avvia il servizio per vedere i tools...")
         tools_layout.addWidget(self.tools_list)
+        right_col.addWidget(tools_group)
 
-        layout.addWidget(tools_group)
-
-        # === USO IN LAN ===
+        # Accesso LAN
         lan_group = QGroupBox("🌐 Accesso LAN")
         lan_layout = QVBoxLayout(lan_group)
-        lan_layout.setSpacing(8)
+        lan_layout.setSpacing(4)
         lan_layout.setContentsMargins(10, 12, 10, 10)
 
-        # Ottieni IP locale
-        try:
-            import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-        except:
-            local_ip = "localhost"
-
         lan_info = QLabel(
-            f"<b>Endpoint API (REST):</b><br>"
-            f"• Locale: <code>http://localhost:5558</code><br>"
-            f"• LAN: <code>http://{local_ip}:5558</code><br><br>"
-            f"<b>Tutti i client nella rete locale possono usare questi endpoint.</b>"
+            f"<b>Locale:</b> <code>http://localhost:5558</code><br>"
+            f"<b>LAN:</b> <code>http://{self.local_ip}:5558</code>"
         )
-        lan_info.setWordWrap(True)
-        lan_info.setStyleSheet("font-size: 11px;")
+        lan_info.setStyleSheet("font-size: 10px;")
         lan_info.setTextInteractionFlags(Qt.TextSelectableByMouse)
         lan_layout.addWidget(lan_info)
 
-        # Esempi di utilizzo
-        examples_label = QLabel(
-            "<b>Esempi chiamate API:</b>"
-        )
-        examples_label.setStyleSheet("font-size: 11px; margin-top: 8px;")
-        lan_layout.addWidget(examples_label)
+        lan_buttons = QHBoxLayout()
+        copy_btn = ModernButton("📋 Copia URL", "blue")
+        copy_btn.clicked.connect(lambda: self._copy_to_clipboard(f"http://{self.local_ip}:5558"))
+        lan_buttons.addWidget(copy_btn)
 
-        self.examples_text = QTextEdit()
-        self.examples_text.setReadOnly(True)
-        self.examples_text.setMaximumHeight(80)
-        self.examples_text.setStyleSheet("font-size: 10px; font-family: monospace;")
-        self.examples_text.setPlainText(
-f'''# Test TTS
-curl -X POST "http://{local_ip}:5558/test/tts?text=Ciao"
-
-# Lista servizi
-curl http://{local_ip}:5558/services'''
-        )
-        lan_layout.addWidget(self.examples_text)
-
-        copy_btn = ModernButton("📋 Copia URL LAN", "blue")
-        copy_btn.clicked.connect(lambda: self._copy_to_clipboard(f"http://{local_ip}:5558"))
-        lan_layout.addWidget(copy_btn)
-
-        layout.addWidget(lan_group)
-
-        # === API DOCS ===
-        api_group = QGroupBox("API & Documentazione")
-        api_layout = QHBoxLayout(api_group)
-        api_layout.setContentsMargins(10, 12, 10, 10)
-
-        docs_btn = ModernButton("📚 Swagger Docs", "purple")
+        docs_btn = ModernButton("📚 Docs", "purple")
         docs_btn.clicked.connect(lambda: webbrowser.open(f"{self.mcp_service_url}/docs"))
-        api_layout.addWidget(docs_btn)
+        lan_buttons.addWidget(docs_btn)
+        lan_layout.addLayout(lan_buttons)
 
-        readme_btn = ModernButton("📖 README", "gray")
-        readme_btn.clicked.connect(self.open_readme)
-        api_layout.addWidget(readme_btn)
+        right_col.addWidget(lan_group)
+        row3.addLayout(right_col, 2)
 
-        api_layout.addStretch()
-        layout.addWidget(api_group)
+        layout.addLayout(row3)
+
+        # ╔════════════════════════════════════════════════════════════╗
+        # ║  RIGA 4: Info requisiti (compatta)                        ║
+        # ╚════════════════════════════════════════════════════════════╝
+        info_label = QLabel(
+            "<span style='font-size: 9px; color: #888;'>"
+            "📋 <b>Requisiti:</b> RAM 8GB+ | VRAM 4GB+ (per Image Analysis) | "
+            "Solo MCP Bridge: 512MB RAM"
+            "</span>"
+        )
+        info_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(info_label)
 
         layout.addStretch()
 
@@ -2706,9 +2687,6 @@ curl http://{local_ip}:5558/services'''
 
         # Rileva risorse all'avvio
         QTimer.singleShot(500, self.detect_system_resources)
-
-        # NO auto-check - l'utente deve avviare manualmente
-        # Il timer parte solo dopo l'avvio del servizio
 
     def detect_system_resources(self):
         """Rileva RAM e VRAM disponibili."""
@@ -3064,7 +3042,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Open WebUI Manager")
-        self.setMinimumSize(900, 700)
+        self.setMinimumSize(1000, 750)
         self.worker = None
 
         self.setup_ui()
