@@ -363,7 +363,7 @@ docker compose up -d
 ### Windows - Doppio Click
 
 ```
-OpenWebUI.bat      → Avvia tutto (Docker + Ollama + Open WebUI)
+scripts/OpenWebUI.bat      → Avvia tutto (Docker + Ollama + Open WebUI)
 OpenWebUI.vbs      → Come sopra, senza finestra nera
 ```
 
@@ -371,7 +371,7 @@ OpenWebUI.vbs      → Come sopra, senza finestra nera
 
 ```bash
 chmod +x *.sh
-./start_all.sh     # Avvia tutto
+./scripts/start_all.sh     # Avvia tutto
 ```
 
 ### Avvio Servizi Singoli

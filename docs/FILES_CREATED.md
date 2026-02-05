@@ -10,7 +10,7 @@ Questo documento elenca tutti i file creati/modificati per il sistema completo O
 ## ✅ File Creati
 
 ### 1. Tool Scientific Council
-📄 **`tools/scientific_council.py`** (1086 righe)
+📄 **`Tools OWUI/scientific_council.py`** (1086 righe)
 - Sistema di concilio multi-LLM
 - 6 funzioni specializzate:
   - `consult_council()` - Consultazione parallela con votazione
@@ -137,7 +137,7 @@ ollama-webui/
 ├── docs/
 │   └── LAN_ACCESS.md              🆕 NUOVO - Guida accesso LAN
 │
-└── tools/
+└── Tools OWUI/
     ├── text_assistant.py          📦 Esistente
     ├── math_assistant.py          📦 Esistente
     ├── code_assistant.py          📦 Esistente

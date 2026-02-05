@@ -77,7 +77,7 @@ curl -X POST -F "file=@grafico.png" http://localhost:5555/analyze-math
 
 ## Tool Open WebUI
 
-Installa il tool `tools/image_analyzer.py` in Open WebUI per usare il servizio direttamente dalla chat.
+Installa il tool `Tools OWUI/image_analyzer.py` in Open WebUI per usare il servizio direttamente dalla chat.
 
 Metodi disponibili:
 - `analyze_image_file(path)` - Analizza file locale

@@ -24,17 +24,26 @@ else
     COMPOSE_CMD="docker-compose"
 fi
 
-echo -e "${BOLD}[1/3] Arresto container Docker...${NC}"
+echo -e "${BOLD}[1/4] Arresto container Docker...${NC}"
 $COMPOSE_CMD down &> /dev/null
 echo -e "      ${GREEN}[OK]${NC}"
 
 echo ""
-echo -e "${BOLD}[2/3] Arresto Ollama...${NC}"
+echo -e "${BOLD}[2/4] Arresto Ollama...${NC}"
 pkill -f "ollama serve" 2>/dev/null
 echo -e "      ${GREEN}[OK]${NC}"
 
 echo ""
-echo -e "${BOLD}[3/3] Verifica...${NC}"
+echo -e "${BOLD}[3/4] Arresto servizi ausiliari...${NC}"
+# MCP Bridge
+pkill -f "mcp_service.py" 2>/dev/null && echo -e "      ${GREEN}[OK]${NC} MCP Bridge fermato" || echo "      MCP Bridge non attivo"
+# TTS Service
+pkill -f "tts_service.py" 2>/dev/null && echo -e "      ${GREEN}[OK]${NC} TTS Service fermato" || echo "      TTS Service non attivo"
+# Document Service
+pkill -f "document_service.py" 2>/dev/null && echo -e "      ${GREEN}[OK]${NC} Document Service fermato" || echo "      Document Service non attivo"
+
+echo ""
+echo -e "${BOLD}[4/4] Verifica...${NC}"
 
 if ! curl -s http://localhost:3000 &> /dev/null; then
     echo -e "      ${GREEN}[OK]${NC} Open WebUI fermato"
@@ -47,6 +56,13 @@ if ! curl -s http://localhost:11434/api/version &> /dev/null; then
 else
     echo "      [!] Ollama ancora attivo"
 fi
+
+# Verifica servizi ausiliari
+for port in 5558 5556 5557; do
+    if ! curl -s -o /dev/null "http://localhost:${port}/" 2>/dev/null; then
+        echo -e "      ${GREEN}[OK]${NC} Porta ${port} libera"
+    fi
+done
 
 echo ""
 echo "======================================================================"

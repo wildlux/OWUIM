@@ -5,26 +5,27 @@
 **🍴 Fork migliorato di [open-webui/open-webui](https://github.com/open-webui/open-webui)**
 
 Sistema completo LLM locali con 14 tools specializzati, GUI desktop PyQt5/Tkinter per Windows/Linux/macOS, concilio multi-modello, italiano nativo, accesso LAN e backup automatico.
-I programmi windows/linux chiamati BUILD servono a esportare il progetto se fai una modifica.
+
 ---
 
 ## 🎯 Quick Start
 
 ### GUI Desktop (Consigliato)
 ```bash
-# Windows
-OpenWebUI.bat                   # Doppio click -> avvia tutto
-
 # Linux/macOS
 ./run_gui.sh                    # GUI completa PyQt5
 ./run_gui_lite.sh               # GUI leggera Tkinter
+
+# Windows
+run_gui.bat                     # GUI completa PyQt5
+run_gui_lite.bat                # GUI leggera Tkinter
 ```
 
 ### Comando Linea
 ```bash
-./start.sh                     # Avvia servizi
-./configure_italian.sh         # Configura italiano
-python3 install_tools.py       # Installa tools
+./scripts/start_all.sh              # Avvia servizi
+./scripts/configure_italian.sh      # Configura italiano
+python3 scripts/install_tools.py    # Installa tools
 ```
 
 Apri: `http://localhost:3000` oppure usa la GUI integrata
@@ -99,25 +100,27 @@ cd ~/ollama-webui
 ### 3. Avvia i Servizi
 
 #### Metodo 1: GUI Desktop (Consigliato)
-**Windows:**
-- Doppio click su `OpenWebUI.bat`
-- Usa la GUI per avviare tutto con un click
-
 **Linux/macOS:**
 ```bash
 ./run_gui.sh          # GUI completa con tutti i controlli
-./run_gui_lite.sh      # GUI leggera solo avvio/arresto
+./run_gui_lite.sh     # GUI leggera solo avvio/arresto
+```
+
+**Windows:**
+```batch
+run_gui.bat           :: GUI completa
+run_gui_lite.bat      :: GUI leggera
 ```
 
 #### Metodo 2: Comando Linea
-**Windows:**
-```batch
-start_all.bat
-```
-
 **Linux/macOS:**
 ```bash
-./start_all.sh
+./scripts/start_all.sh
+```
+
+**Windows:**
+```batch
+scripts\start_all.bat
 ```
 
 **Manuale:**
@@ -148,7 +151,7 @@ docker exec -it ollama ollama pull gemma2:9b
 ### 6. Installa i Tools
 
 ```bash
-python3 install_tools.py
+python3 scripts/install_tools.py
 ```
 
 Inserisci le credenziali admin di Open WebUI quando richiesto.
@@ -291,7 +294,7 @@ plot_mathematical(
 ### Attivazione Rapida
 
 ```bash
-./enable_lan_access.sh
+./scripts/enable_lan_access.sh
 ```
 
 Lo script:
@@ -310,7 +313,7 @@ Lo script:
 ### Disattivazione
 
 ```bash
-./disable_lan_access.sh
+./scripts/disable_lan_access.sh
 ```
 
 Ripristina modalità localhost-only (127.0.0.1).
@@ -326,7 +329,7 @@ Vedi: [`docs/LAN_ACCESS.md`](docs/LAN_ACCESS.md)
 ### Backup Completo
 
 ```bash
-./backup_to_usb.sh
+./scripts/backup_to_usb.sh
 ```
 
 Lo script:
@@ -347,7 +350,7 @@ Lo script:
 - ✅ `docker-compose.yml`, `.env`
 - ✅ Script bash (enable/disable LAN, backup)
 - ✅ `install_tools.py`
-- ✅ Directory `tools/` completa (11 tools)
+- ✅ Directory `Tools OWUI/` completa (11 tools)
 - ✅ Dati utente Open WebUI (account, chat, documenti)
 - ✅ Documentazione
 
@@ -469,7 +472,7 @@ ports:
 
 ### Tools Non Compaiono in Open WebUI
 
-1. Verifica installazione: `python3 install_tools.py`
+1. Verifica installazione: `python3 scripts/install_tools.py`
 2. Admin Panel → Functions → Tools
 3. Toggle per attivare
 4. Ricarica pagina (F5)
@@ -514,7 +517,7 @@ curl http://192.168.1.X:3000
 I browser mobili richiedono HTTPS per il microfono:
 
 ```bash
-./enable_https.sh
+./scripts/enable_https.sh
 ```
 
 Poi accedi da: `https://192.168.1.X` (accetta certificato self-signed)

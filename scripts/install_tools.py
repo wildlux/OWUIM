@@ -12,7 +12,7 @@ import getpass
 BASE_URL = "http://localhost:3000"
 
 # Lista dei file tools da installare
-TOOLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
+TOOLS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Tools OWUI")
 
 TOOLS_FILES = [
     "text_assistant.py",

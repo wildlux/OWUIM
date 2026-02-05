@@ -286,7 +286,7 @@ ollama-webui/
 ├── install_tools.py                  # Installa tools
 ├── docker-compose.yml                # Config Docker
 │
-├── tools/
+├── Tools OWUI/
 │   ├── scientific_council.py         # Tool principale
 │   └── [10 altri tools...]
 │

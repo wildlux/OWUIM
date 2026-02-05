@@ -20,7 +20,7 @@ activate_venv() {
         return 0
     else
         echo -e "${YELLOW}[!] Ambiente virtuale non trovato${NC}"
-        echo "Esegui: ./setup_env.sh"
+        echo "Esegui: ./scripts/setup_env.sh"
         return 1
     fi
 }

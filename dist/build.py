@@ -209,7 +209,7 @@ def build_windows():
     gui_script_str = str(GUI_SCRIPT).replace("\\", "\\\\")
     script_dir_str = str(SCRIPT_DIR).replace("\\", "\\\\")
     icon_dir_str = str(SCRIPT_DIR / "ICONA").replace("\\", "\\\\")
-    tools_dir_str = str(SCRIPT_DIR / "tools").replace("\\", "\\\\")
+    tools_dir_str = str(SCRIPT_DIR / "Tools OWUI").replace("\\", "\\\\")
     scripts_dir_str = str(SCRIPT_DIR / "scripts").replace("\\", "\\\\")
     compose_str = str(SCRIPT_DIR / "docker-compose.yml").replace("\\", "\\\\")
     icon_ico_str = str(ICON_ICO).replace("\\", "\\\\")
@@ -224,7 +224,7 @@ a = Analysis(
     binaries=[],
     datas=[
         (r'{icon_dir_str}', 'ICONA'),
-        (r'{tools_dir_str}', 'tools'),
+        (r'{tools_dir_str}', 'Tools OWUI'),
         (r'{scripts_dir_str}', 'scripts'),
         (r'{compose_str}', '.'),
     ],

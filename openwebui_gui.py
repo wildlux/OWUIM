@@ -58,6 +58,15 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).parent.resolve()
 SCRIPTS_DIR = SCRIPT_DIR / "scripts"
 
+# System Profiler per monitoraggio risorse
+import sys
+sys.path.insert(0, str(SCRIPTS_DIR))
+try:
+    from system_profiler import get_system_profile, SystemTier
+    HAS_PROFILER = True
+except ImportError:
+    HAS_PROFILER = False
+
 # Comando docker compose (compatibile con vecchie e nuove versioni)
 def get_docker_compose_cmd():
     """Ritorna il comando docker compose corretto per il sistema."""
@@ -519,6 +528,76 @@ class DashboardWidget(QWidget):
         status_layout.addWidget(self.tts_status)
         layout.addWidget(status_group)
 
+        # === RISORSE SISTEMA ===
+        if HAS_PROFILER:
+            system_group = QGroupBox("Risorse Sistema")
+            system_group.setFont(QFont("Arial", 12, QFont.Bold))
+            system_layout = QHBoxLayout(system_group)
+            system_layout.setSpacing(20)
+
+            # Colonna sinistra: RAM e CPU
+            left_col = QVBoxLayout()
+
+            # RAM
+            ram_row = QHBoxLayout()
+            self.ram_label = QLabel("RAM: --")
+            self.ram_label.setFont(QFont("Arial", 10))
+            ram_row.addWidget(self.ram_label)
+            self.ram_bar = QProgressBar()
+            self.ram_bar.setMaximumWidth(150)
+            self.ram_bar.setMaximumHeight(18)
+            self.ram_bar.setStyleSheet("""
+                QProgressBar {
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    text-align: center;
+                }
+                QProgressBar::chunk {
+                    background-color: #3498db;
+                    border-radius: 4px;
+                }
+            """)
+            ram_row.addWidget(self.ram_bar)
+            left_col.addLayout(ram_row)
+
+            # Tier sistema
+            tier_row = QHBoxLayout()
+            tier_row.addWidget(QLabel("Tier:"))
+            self.tier_label = QLabel("--")
+            self.tier_label.setFont(QFont("Arial", 10, QFont.Bold))
+            tier_row.addWidget(self.tier_label)
+            tier_row.addStretch()
+            left_col.addLayout(tier_row)
+
+            system_layout.addLayout(left_col)
+
+            # Separatore
+            vsep = QFrame()
+            vsep.setFrameShape(QFrame.VLine)
+            vsep.setStyleSheet("background-color: #ddd;")
+            system_layout.addWidget(vsep)
+
+            # Colonna destra: Limiti
+            right_col = QVBoxLayout()
+            self.limits_label = QLabel("Timeout TTS: -- sec")
+            self.limits_label.setFont(QFont("Arial", 9))
+            self.limits_label.setStyleSheet("color: #7f8c8d;")
+            right_col.addWidget(self.limits_label)
+
+            self.protection_label = QLabel("")
+            self.protection_label.setFont(QFont("Arial", 9))
+            right_col.addWidget(self.protection_label)
+
+            system_layout.addLayout(right_col)
+
+            layout.addWidget(system_group)
+
+            # Aggiorna subito e poi ogni 5 secondi
+            self.update_system_info()
+            self.system_timer = QTimer()
+            self.system_timer.timeout.connect(self.update_system_info)
+            self.system_timer.start(5000)
+
         # Azioni rapide
         actions_group = QGroupBox("Azioni Rapide")
         actions_group.setFont(QFont("Arial", 12, QFont.Bold))
@@ -612,6 +691,65 @@ class DashboardWidget(QWidget):
             subprocess.Popen(['open', url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             subprocess.Popen(['xdg-open', url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def update_system_info(self):
+        """Aggiorna le informazioni sul sistema."""
+        if not HAS_PROFILER:
+            return
+
+        try:
+            profile = get_system_profile()
+
+            # RAM
+            self.ram_label.setText(f"RAM: {profile.ram_available_gb:.1f}/{profile.ram_total_gb:.1f} GB")
+            self.ram_bar.setValue(int(profile.ram_percent_used))
+
+            # Colore barra RAM basato su utilizzo
+            if profile.ram_percent_used >= profile.ram_critical_threshold:
+                bar_color = "#e74c3c"  # Rosso
+            elif profile.ram_percent_used >= profile.ram_warning_threshold:
+                bar_color = "#f39c12"  # Arancione
+            else:
+                bar_color = "#27ae60"  # Verde
+            self.ram_bar.setStyleSheet(f"""
+                QProgressBar {{
+                    border: 1px solid #bdc3c7;
+                    border-radius: 5px;
+                    text-align: center;
+                }}
+                QProgressBar::chunk {{
+                    background-color: {bar_color};
+                    border-radius: 4px;
+                }}
+            """)
+
+            # Tier
+            tier_colors = {
+                SystemTier.MINIMAL: ("#e74c3c", "MINIMAL - Risorse critiche!"),
+                SystemTier.LOW: ("#f39c12", "LOW - Timeout ridotti"),
+                SystemTier.MEDIUM: ("#27ae60", "MEDIUM - OK"),
+                SystemTier.HIGH: ("#3498db", "HIGH - Potente")
+            }
+            color, text = tier_colors.get(profile.tier, ("#7f8c8d", profile.tier.value))
+            self.tier_label.setText(text)
+            self.tier_label.setStyleSheet(f"color: {color};")
+
+            # Limiti
+            self.limits_label.setText(f"Timeout TTS: {profile.timeout_tts}s | LLM: {profile.timeout_llm}s")
+
+            # Stato protezione
+            if profile.ram_percent_used >= profile.ram_critical_threshold:
+                self.protection_label.setText("⚠️ RAM critica - operazioni bloccate")
+                self.protection_label.setStyleSheet("color: #e74c3c; font-weight: bold;")
+            elif profile.ram_percent_used >= profile.ram_warning_threshold:
+                self.protection_label.setText("⚡ RAM alta - chiudi app non necessarie")
+                self.protection_label.setStyleSheet("color: #f39c12;")
+            else:
+                self.protection_label.setText("✓ Sistema OK")
+                self.protection_label.setStyleSheet("color: #27ae60;")
+
+        except Exception as e:
+            self.tier_label.setText(f"Errore: {e}")
 
 
 class LogsWidget(QWidget):
@@ -1556,25 +1694,47 @@ class TTSWidget(QWidget):
         """Verifica stato servizio TTS locale."""
         try:
             import requests
-            resp = requests.get(f"{self.tts_service_url}/", timeout=3)
+            # Usa il nuovo endpoint /voices/check per info complete
+            resp = requests.get(f"{self.tts_service_url}/voices/check", timeout=3)
             if resp.status_code == 200:
                 data = resp.json()
-                models = data.get("models_installed", [])
-                piper_ok = data.get("piper_installed", False)
+                ready = data.get("ready", False)
+                models = data.get("voices_installed", [])
+                missing = data.get("voices_missing", [])
+                piper_available = data.get("piper_available", False)
+                message = data.get("message", "")
 
-                if piper_ok and models:
+                if ready:
+                    # Sistema pronto - tutto OK
                     self.status_indicator.setStyleSheet("color: #27ae60;")
-                    self.status_label.setText(f"Attivo - OFFLINE ({len(models)} voci)")
+                    self.status_label.setText(f"PRONTO - {len(models)} voci installate")
                     self.test_btn.setEnabled(True)
                     self.play_btn.setEnabled(False)  # Reset play button
-                elif piper_ok:
-                    self.status_indicator.setStyleSheet("color: #f39c12;")
-                    self.status_label.setText("Attivo - Scarica le voci")
+                    self.result_text.setPlainText(f"TTS pronto.\nVoci: {', '.join(models)}")
+                elif not models:
+                    # Nessuna voce installata
+                    self.status_indicator.setStyleSheet("color: #e74c3c;")
+                    self.status_label.setText("VOCI MANCANTI - Scarica sotto!")
                     self.test_btn.setEnabled(False)
+                    self.result_text.setPlainText(
+                        "⚠️ ATTENZIONE: La sintesi vocale NON funzionerà!\n\n"
+                        "Devi scaricare almeno una voce italiana.\n"
+                        "Usa i pulsanti 'Scarica' qui sotto."
+                    )
+                elif not piper_available:
+                    # Piper non disponibile
+                    self.status_indicator.setStyleSheet("color: #f39c12;")
+                    self.status_label.setText("PIPER MANCANTE")
+                    self.test_btn.setEnabled(False)
+                    self.result_text.setPlainText(
+                        "Piper TTS non installato.\n"
+                        "Clicca 'Scarica Tutte' per installare."
+                    )
                 else:
+                    # Stato parziale
                     self.status_indicator.setStyleSheet("color: #f39c12;")
-                    self.status_label.setText("Attivo - Installa Piper")
-                    self.test_btn.setEnabled(False)
+                    self.status_label.setText(f"Parziale - {len(models)} voci")
+                    self.test_btn.setEnabled(bool(models))
 
                 self.start_service_btn.setEnabled(False)
 
@@ -1585,8 +1745,8 @@ class TTSWidget(QWidget):
                     self.install_paola_btn.setText("✓ OK")
                     self.install_paola_btn.setEnabled(False)
                 else:
-                    self.paola_status.setStyleSheet("color: #bdc3c7;")
-                    self.paola_status.setToolTip("Non installata")
+                    self.paola_status.setStyleSheet("color: #e74c3c;")
+                    self.paola_status.setToolTip("Non installata - Clicca Scarica")
                     self.install_paola_btn.setText("Scarica")
                     self.install_paola_btn.setEnabled(True)
 
@@ -1596,8 +1756,8 @@ class TTSWidget(QWidget):
                     self.install_riccardo_btn.setText("✓ OK")
                     self.install_riccardo_btn.setEnabled(False)
                 else:
-                    self.riccardo_status.setStyleSheet("color: #bdc3c7;")
-                    self.riccardo_status.setToolTip("Non installato")
+                    self.riccardo_status.setStyleSheet("color: #e74c3c;")
+                    self.riccardo_status.setToolTip("Non installato - Clicca Scarica")
                     self.install_riccardo_btn.setText("Scarica")
                     self.install_riccardo_btn.setEnabled(True)
             else:
@@ -3321,6 +3481,50 @@ class MainWindow(QMainWindow):
 
         # Timer per aggiornare status QR-Code LAN
         QTimer.singleShot(500, self.update_qr_status)
+
+        # Timer per controllo voci TTS all'avvio
+        QTimer.singleShot(2000, self.check_tts_voices_on_startup)
+
+    def check_tts_voices_on_startup(self):
+        """
+        Controlla se le voci TTS sono installate all'avvio.
+        Se non lo sono, mostra un avviso e porta l'utente al tab Voce.
+        """
+        try:
+            import requests
+            # Controlla se il servizio TTS è attivo
+            resp = requests.get("http://localhost:5556/voices/check", timeout=3)
+            if resp.status_code == 200:
+                data = resp.json()
+                if not data.get("ready", False):
+                    # TTS non pronto - mostra avviso
+                    message = data.get("message", "Voci TTS non installate")
+                    voices_missing = data.get("voices_missing", [])
+
+                    msg_box = QMessageBox(self)
+                    msg_box.setIcon(QMessageBox.Warning)
+                    msg_box.setWindowTitle("Sintesi Vocale Non Configurata")
+                    msg_box.setText(f"<b>{message}</b>")
+                    msg_box.setInformativeText(
+                        "La sintesi vocale di Open WebUI non funzionerà finché non installi le voci.\n\n"
+                        f"Voci mancanti: {', '.join(voices_missing) if voices_missing else 'tutte'}\n\n"
+                        "Vuoi andare al tab 'Voce' per installarle ora?"
+                    )
+                    msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                    msg_box.setDefaultButton(QMessageBox.Yes)
+
+                    if msg_box.exec_() == QMessageBox.Yes:
+                        # Trova l'indice del tab Voce e selezionalo
+                        for i in range(self.tabs.count()):
+                            if "Voce" in self.tabs.tabText(i):
+                                self.tabs.setCurrentIndex(i)
+                                break
+        except requests.exceptions.ConnectionError:
+            # Servizio TTS non attivo - non è un errore critico all'avvio
+            pass
+        except Exception as e:
+            # Ignora altri errori silenziosamente
+            print(f"[TTS Check] Errore: {e}")
 
     def setup_tray(self):
         """Configura icona nel system tray"""

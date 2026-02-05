@@ -12,112 +12,72 @@ Sistema AI locale basato su **Open WebUI + Ollama** con 14 tools specializzati, 
 
 ```
 ollama-webui/
-├── windows/                 # Setup Windows (dual-mode)
-│   ├── openwebui.bat        # Gestore unificato (start/stop/install/status)
-│   └── wsl_fix.bat          # Risoluzione problemi WSL2/Docker
-├── linux/                   # Setup Linux (Docker nativo)
-│   └── openwebui.sh         # Gestore unificato
-├── tools/                   # 14 tools Python per Open WebUI
-│   ├── image_handler.py     # Gestione immagini (evita bug base64)
-│   ├── image_analyzer.py    # Analisi immagini via servizio locale
-│   └── document_reader.py   # Lettura documenti via servizio locale
-├── image_analysis/          # Servizio analisi immagini
-│   ├── image_service.py     # Servizio FastAPI (:5555)
-│   ├── image_converter.py   # Convertitore PNG/SVG
-│   ├── start_image_service.bat  # Avvia (Windows)
-│   ├── start_image_service.sh   # Avvia (Linux)
-│   └── README.md            # Documentazione
-├── tts_service/             # Servizio sintesi vocale
-│   ├── tts_service.py       # Servizio FastAPI (:5556)
-│   ├── start_tts_service.bat    # Avvia (Windows)
-│   ├── start_tts_service.sh     # Avvia (Linux)
-│   └── README.md            # Documentazione
-├── document_service/        # Servizio lettura documenti
-│   ├── document_service.py  # Servizio FastAPI (:5557)
-│   ├── start_document_service.bat  # Avvia (Windows)
-│   ├── start_document_service.sh   # Avvia (Linux)
-│   └── README.md            # Documentazione
-├── mcp_service/             # Servizio MCP Bridge
-│   ├── mcp_service.py       # Servizio FastAPI + MCP (:5558)
-│   ├── start_mcp_service.bat    # Avvia (Windows)
-│   ├── start_mcp_service.sh     # Avvia (Linux)
-│   └── README.md            # Documentazione
-├── scripts/                 # Script gestione (install_tools, backup, LAN)
-├── docs/                    # Documentazione
-├── ICONA/                   # Icone applicazione
-├── installer/               # Script Inno Setup per installer Windows
+├── openwebui_gui.py         # GUI principale (PyQt5)
+├── openwebui_gui_lite.py    # GUI leggera (Tkinter)
+├── run_gui.sh / .bat        # Launcher GUI
+├── run_gui_lite.sh / .bat   # Launcher GUI lite
 ├── docker-compose.yml       # Config Docker
-├── openwebui_gui.py         # GUI desktop PyQt5 (auto-start + Image Converter)
-├── openwebui_gui_lite.py    # GUI leggera Tkinter
-├── OpenWebUI.bat            # Doppio click -> avvia tutto
-├── OpenWebUI.vbs            # Launcher silenzioso (no finestra nera)
-├── build.py                 # Build eseguibile (auto-venv)
-├── build_exe.bat            # Doppio click -> crea .exe
-└── build_installer.bat      # Doppio click -> crea installer .exe
+├── requirements.txt         # Dipendenze Python
+│
+├── Tools OWUI/              # 14 tools Python per Open WebUI
+├── scripts/                 # Cassetta attrezzi (setup, backup, build, etc.)
+├── docs/                    # Documentazione
+├── ICONA/                   # Icone + screenshots
+├── dist/                    # Build output + installer
+│
+├── image_analysis/          # Servizio analisi immagini (:5555)
+├── document_service/        # Servizio lettura documenti (:5557)
+├── tts_service/             # Servizio sintesi vocale (:5556)
+└── mcp_service/             # Servizio MCP Bridge (:5558)
 ```
 
 ## Avvio Rapido
 
-### Windows - Doppio Click
-```
-OpenWebUI.bat            -> Avvia tutto (Docker + Ollama + Open WebUI)
-OpenWebUI.vbs            -> Come sopra, senza finestra nera
-```
-
-### Windows - GUI
-```batch
-run_gui.bat              :: GUI completa con auto-start
-run_gui_lite.bat         :: GUI leggera (Tkinter)
-```
-
-### Linux
+### GUI (Consigliato)
 ```bash
-chmod +x *.sh
-./start_all.sh           # Avvia tutto
-./run_gui.sh             # GUI completa (PyQt5)
+# Linux
+./run_gui.sh
+
+# Windows
+run_gui.bat
+```
+
+### Versione Lite (Tkinter, no dipendenze)
+```bash
+# Linux
+./run_gui_lite.sh
+
+# Windows
+run_gui_lite.bat
 ```
 
 ## Build e Distribuzione
 
-### Creare .exe standalone
-```batch
-build_exe.bat            :: Crea dist\OpenWebUI-Manager.exe
+```bash
+# Dalla cartella dist/
+python build.py              # Crea eseguibile
 ```
-
-### Creare Installer Windows (.exe setup)
-```batch
-build_installer.bat      :: Crea dist\OpenWebUI-Manager-Setup-X.X.X.exe
-```
-
-Requisiti per il build:
-- Python 3.8+
-- Inno Setup 6 (per installer): https://jrsoftware.org/isdl.php
 
 ## Setup Ambiente Python
 
-### Windows
-```batch
-setup_env.bat                :: Crea venv e installa dipendenze
-```
-
-### Linux
 ```bash
-./setup_env.sh               # Crea venv e installa dipendenze
+# Linux
+./scripts/setup_env.sh
+
+# Windows
+scripts\setup_env.bat
 ```
 
 ## Comandi Manuali
 
-### Windows
-```batch
-windows\openwebui.bat              :: Menu interattivo
-windows\openwebui.bat start        :: Avvia (try Docker -> fallback Python)
-windows\openwebui.bat stop         :: Ferma
-```
-
-### Linux
 ```bash
-linux/openwebui.sh start           # Avvia
-linux/openwebui.sh stop            # Ferma
+# Linux
+./scripts/start_all.sh       # Avvia tutti i servizi
+./scripts/stop_all.sh        # Ferma tutti i servizi
+
+# Windows
+scripts\start_all.bat
+scripts\stop_all.bat
 ```
 
 ### Tools
@@ -144,7 +104,7 @@ class Tools:
 
 ## Scientific Council
 
-`tools/scientific_council.py` - Consulta 3-5 LLM in parallelo con votazione pesata.
+`Tools OWUI/scientific_council.py` - Consulta 3-5 LLM in parallelo con votazione pesata.
 
 - `OllamaCouncil` con `ThreadPoolExecutor`
 - Domini: matematica, codice, italiano, sicurezza, generale
@@ -190,7 +150,7 @@ ollama pull llava          # Modello vision
 - `POST /extract-text` - OCR + Vision
 - `POST /analyze-math` - Contenuto matematico
 
-**Tool Open WebUI:** `tools/image_analyzer.py`
+**Tool Open WebUI:** `Tools OWUI/image_analyzer.py`
 
 ### Soluzione 2: Conversione Immagini
 
@@ -203,7 +163,7 @@ convert_image.bat          # Windows
 python image_converter.py immagine.png -f base64
 ```
 
-**Tool Open WebUI:** `tools/image_handler.py`
+**Tool Open WebUI:** `Tools OWUI/image_handler.py`
 
 ### Limiti Open WebUI
 - Base64 max ~40.000 caratteri
@@ -313,7 +273,7 @@ curl -X POST -F "file=@documento.pdf" http://localhost:5557/read
 curl -X POST -F "file=@documento.docx" http://localhost:5557/extract-text
 ```
 
-**Tool Open WebUI:** `tools/document_reader.py`
+**Tool Open WebUI:** `Tools OWUI/document_reader.py`
 
 ## MCP Bridge Service
 
@@ -390,6 +350,6 @@ curl -X POST "http://localhost:5558/test/tts?text=Ciao"
 - Ollama su host (non container) per GPU
 - GUI Lite: Non richiede venv (usa solo libreria standard)
 - GUI Completa: Richiede venv con PyQt5
-- build.py: Crea automaticamente venv se non esiste
-- Installer: Richiede Inno Setup 6
+- dist/build.py: Crea automaticamente venv se non esiste
+- dist/installer/: Script Inno Setup per Windows
 - Conversione immagini: Richiede Pillow (incluso in requirements.txt)

@@ -208,7 +208,7 @@ Pulisce la cache dei documenti.
 
 ## Integrazione con Open WebUI
 
-Usa il tool `tools/document_reader.py` per integrare questo servizio con Open WebUI.
+Usa il tool `Tools OWUI/document_reader.py` per integrare questo servizio con Open WebUI.
 
 ## Troubleshooting
 

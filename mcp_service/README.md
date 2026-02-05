@@ -132,9 +132,9 @@ curl -X POST "http://localhost:5558/test/tts?text=Buongiorno&voice=paola"
 Il bridge MCP può essere usato da Open WebUI in due modi:
 
 ### 1. Via Tools esistenti (consigliato)
-I tools in `tools/` già chiamano i servizi direttamente:
-- `tools/image_analyzer.py` → Image Service
-- `tools/document_reader.py` → Document Service
+I tools in `Tools OWUI/` già chiamano i servizi direttamente:
+- `Tools OWUI/image_analyzer.py` → Image Service
+- `Tools OWUI/document_reader.py` → Document Service
 
 ### 2. Via API REST
 Crea un nuovo tool che chiama l'API del bridge:
