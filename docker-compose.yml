@@ -28,6 +28,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - open_webui_data:/app/backend/data
+      - /home/wildlux:/app/backend/data/uploads/wildlux
     restart: unless-stopped
     depends_on:
       - openedai-speech

@@ -328,10 +328,10 @@ class PiperTTS:
 
         voice = self.loaded_voices[model_path]
 
-        # Sintetizza in memoria
+        # Sintetizza in memoria (piper-tts >= 1.3.0 usa synthesize_wav)
         wav_buffer = io.BytesIO()
         with wave.open(wav_buffer, 'wb') as wav_file:
-            voice.synthesize(text, wav_file)
+            voice.synthesize_wav(text, wav_file)
 
         wav_buffer.seek(0)
         return wav_buffer.read()

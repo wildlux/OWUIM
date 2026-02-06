@@ -67,6 +67,15 @@ try:
 except ImportError:
     HAS_PROFILER = False
 
+# Traduzioni IT/EN
+try:
+    from translations import TRANSLATIONS, get_text
+    HAS_TRANSLATIONS = True
+except ImportError:
+    HAS_TRANSLATIONS = False
+    def get_text(key, lang="it", **kwargs):
+        return key
+
 # Comando docker compose (compatibile con vecchie e nuove versioni)
 def get_docker_compose_cmd():
     """Ritorna il comando docker compose corretto per il sistema."""
@@ -120,7 +129,7 @@ class StartupThread(QThread):
                 self.progress_signal.emit("Download immagine...", 60)
                 self.pull_image()
                 if not self.start_containers():
-                    self.finished_signal.emit(False, "Impossibile avviare i container.")
+                    self.finished_signal.emit(False, "Impossibile avviare i container.\n\nVerifica che Docker sia in esecuzione.")
                     return
             self.progress_signal.emit("Container avviato", 75)
 
@@ -526,6 +535,11 @@ class DashboardWidget(QWidget):
         status_layout.addWidget(self.ollama_status)
         status_layout.addWidget(self.openwebui_status)
         status_layout.addWidget(self.tts_status)
+
+        self.last_check_label = QLabel("Ultimo controllo: --")
+        self.last_check_label.setStyleSheet("font-size: 9px; color: #95a5a6; margin-top: 2px;")
+        status_layout.addWidget(self.last_check_label)
+
         layout.addWidget(status_group)
 
         # === RISORSE SISTEMA ===
@@ -535,37 +549,54 @@ class DashboardWidget(QWidget):
             system_layout = QHBoxLayout(system_group)
             system_layout.setSpacing(20)
 
-            # Colonna sinistra: RAM e CPU
+            # Colonna sinistra: GPU + CPU/RAM
             left_col = QVBoxLayout()
 
-            # RAM
-            ram_row = QHBoxLayout()
+            # GPU
+            self.gpu_label = QLabel("GPU: rilevamento...")
+            self.gpu_label.setFont(QFont("Arial", 10))
+            self.gpu_label.setStyleSheet("color: #2c3e50;")
+            left_col.addWidget(self.gpu_label)
+
+            # CPU + RAM sulla stessa riga
+            cpu_ram_row = QHBoxLayout()
+            self.cpu_label = QLabel("CPU: --")
+            self.cpu_label.setFont(QFont("Arial", 9))
+            self.cpu_label.setStyleSheet("color: #555;")
+            cpu_ram_row.addWidget(self.cpu_label)
+            cpu_ram_row.addSpacing(15)
             self.ram_label = QLabel("RAM: --")
-            self.ram_label.setFont(QFont("Arial", 10))
-            ram_row.addWidget(self.ram_label)
+            self.ram_label.setFont(QFont("Arial", 9))
+            self.ram_label.setStyleSheet("color: #555;")
+            cpu_ram_row.addWidget(self.ram_label)
             self.ram_bar = QProgressBar()
-            self.ram_bar.setMaximumWidth(150)
-            self.ram_bar.setMaximumHeight(18)
+            self.ram_bar.setMaximumWidth(120)
+            self.ram_bar.setMaximumHeight(16)
             self.ram_bar.setStyleSheet("""
                 QProgressBar {
                     border: 1px solid #bdc3c7;
                     border-radius: 5px;
                     text-align: center;
+                    font-size: 9px;
                 }
                 QProgressBar::chunk {
                     background-color: #3498db;
                     border-radius: 4px;
                 }
             """)
-            ram_row.addWidget(self.ram_bar)
-            left_col.addLayout(ram_row)
+            cpu_ram_row.addWidget(self.ram_bar)
+            cpu_ram_row.addStretch()
+            left_col.addLayout(cpu_ram_row)
 
-            # Tier sistema
+            # Tier + protezione
             tier_row = QHBoxLayout()
-            tier_row.addWidget(QLabel("Tier:"))
             self.tier_label = QLabel("--")
-            self.tier_label.setFont(QFont("Arial", 10, QFont.Bold))
+            self.tier_label.setFont(QFont("Arial", 9, QFont.Bold))
             tier_row.addWidget(self.tier_label)
+            tier_row.addSpacing(10)
+            self.protection_label = QLabel("")
+            self.protection_label.setFont(QFont("Arial", 9))
+            tier_row.addWidget(self.protection_label)
             tier_row.addStretch()
             left_col.addLayout(tier_row)
 
@@ -577,16 +608,16 @@ class DashboardWidget(QWidget):
             vsep.setStyleSheet("background-color: #ddd;")
             system_layout.addWidget(vsep)
 
-            # Colonna destra: Limiti
+            # Colonna destra: Limiti + messaggio rassicurante
             right_col = QVBoxLayout()
             self.limits_label = QLabel("Timeout TTS: -- sec")
             self.limits_label.setFont(QFont("Arial", 9))
             self.limits_label.setStyleSheet("color: #7f8c8d;")
             right_col.addWidget(self.limits_label)
 
-            self.protection_label = QLabel("")
-            self.protection_label.setFont(QFont("Arial", 9))
-            right_col.addWidget(self.protection_label)
+            self.ai_ready_label = QLabel("")
+            self.ai_ready_label.setFont(QFont("Arial", 9, QFont.Bold))
+            right_col.addWidget(self.ai_ready_label)
 
             system_layout.addLayout(right_col)
 
@@ -608,6 +639,11 @@ class DashboardWidget(QWidget):
         self.btn_stop = ModernButton("⏹  Ferma", "red")
         self.btn_restart = ModernButton("🔄  Riavvia", "orange")
         self.btn_open_browser = ModernButton("🌐  Apri Browser", "blue")
+
+        self.btn_start.setToolTip("Avvia Docker e Open WebUI (Ctrl+1)")
+        self.btn_stop.setToolTip("Ferma tutti i container Docker")
+        self.btn_restart.setToolTip("Riavvia i servizi Docker")
+        self.btn_open_browser.setToolTip("Apri Open WebUI nel browser (Ctrl+B)")
 
         self.btn_start.clicked.connect(self.start_services)
         self.btn_stop.clicked.connect(self.stop_services)
@@ -631,7 +667,7 @@ class DashboardWidget(QWidget):
             "🤖 Ollama API: <a href='http://localhost:11434'>http://localhost:11434</a><br>"
             "🔊 TTS API: <a href='http://localhost:8000'>http://localhost:8000</a><br>"
             f"📁 Directory: {SCRIPT_DIR}<br><br>"
-            "📁 <b>Archivio:</b> Gestisci file locali da usare come Knowledge Base in Open WebUI<br>"
+            "📁 <b>Archivio:</b> Gestisci file locali da usare come archivio documenti in Open WebUI<br>"
             "🔊 <b>Voce:</b> Sintesi vocale italiana offline con Piper TTS"
         )
         info_text.setOpenExternalLinks(True)
@@ -694,11 +730,26 @@ class DashboardWidget(QWidget):
 
     def update_system_info(self):
         """Aggiorna le informazioni sul sistema."""
+        from datetime import datetime
+        self.last_check_label.setText(f"Ultimo controllo: {datetime.now().strftime('%H:%M:%S')}")
         if not HAS_PROFILER:
             return
 
         try:
             profile = get_system_profile()
+
+            # GPU
+            if profile.has_gpu and profile.gpu_name:
+                vram_text = f" ({profile.gpu_vram_gb} GB VRAM)" if profile.gpu_vram_gb > 0 else ""
+                self.gpu_label.setText(f"GPU: {profile.gpu_name}{vram_text}")
+                self.gpu_label.setStyleSheet("color: #27ae60; font-weight: bold;")
+            else:
+                self.gpu_label.setText("GPU: Non rilevata (solo CPU)")
+                self.gpu_label.setStyleSheet("color: #e67e22;")
+
+            # CPU
+            cpu_short = profile.cpu_name[:40] + "..." if len(profile.cpu_name) > 40 else profile.cpu_name
+            self.cpu_label.setText(f"CPU: {cpu_short} ({profile.cpu_cores} core)")
 
             # RAM
             self.ram_label.setText(f"RAM: {profile.ram_available_gb:.1f}/{profile.ram_total_gb:.1f} GB")
@@ -706,16 +757,17 @@ class DashboardWidget(QWidget):
 
             # Colore barra RAM basato su utilizzo
             if profile.ram_percent_used >= profile.ram_critical_threshold:
-                bar_color = "#e74c3c"  # Rosso
+                bar_color = "#e74c3c"
             elif profile.ram_percent_used >= profile.ram_warning_threshold:
-                bar_color = "#f39c12"  # Arancione
+                bar_color = "#f39c12"
             else:
-                bar_color = "#27ae60"  # Verde
+                bar_color = "#27ae60"
             self.ram_bar.setStyleSheet(f"""
                 QProgressBar {{
                     border: 1px solid #bdc3c7;
                     border-radius: 5px;
                     text-align: center;
+                    font-size: 9px;
                 }}
                 QProgressBar::chunk {{
                     background-color: {bar_color};
@@ -737,16 +789,23 @@ class DashboardWidget(QWidget):
             # Limiti
             self.limits_label.setText(f"Timeout TTS: {profile.timeout_tts}s | LLM: {profile.timeout_llm}s")
 
-            # Stato protezione
+            # Stato protezione + messaggio rassicurante
             if profile.ram_percent_used >= profile.ram_critical_threshold:
-                self.protection_label.setText("⚠️ RAM critica - operazioni bloccate")
+                self.protection_label.setText("⚠️ RAM critica")
                 self.protection_label.setStyleSheet("color: #e74c3c; font-weight: bold;")
+                self.ai_ready_label.setText("Chiudi app non necessarie")
+                self.ai_ready_label.setStyleSheet("color: #e74c3c;")
             elif profile.ram_percent_used >= profile.ram_warning_threshold:
-                self.protection_label.setText("⚡ RAM alta - chiudi app non necessarie")
+                self.protection_label.setText("⚡ RAM alta")
                 self.protection_label.setStyleSheet("color: #f39c12;")
+                self.ai_ready_label.setText("Sistema funzionante")
+                self.ai_ready_label.setStyleSheet("color: #f39c12;")
             else:
-                self.protection_label.setText("✓ Sistema OK")
+                self.protection_label.setText("✓ OK")
                 self.protection_label.setStyleSheet("color: #27ae60;")
+                gpu_msg = " con GPU" if profile.has_gpu else ""
+                self.ai_ready_label.setText(f"Il tuo sistema e' pronto per l'AI{gpu_msg}")
+                self.ai_ready_label.setStyleSheet("color: #27ae60;")
 
         except Exception as e:
             self.tier_label.setText(f"Errore: {e}")
@@ -1060,17 +1119,34 @@ class ModelsWidget(QWidget):
     def remove_model(self):
         model = self.remove_combo.currentText().strip()
         if model:
-            reply = QMessageBox.question(
-                self, "Conferma",
-                f"Vuoi davvero rimuovere il modello '{model}'?",
-                QMessageBox.Yes | QMessageBox.No
+            # Cerca dimensione modello dalla tabella
+            model_size = ""
+            for row in range(self.models_table.rowCount()):
+                item = self.models_table.item(row, 0)
+                if item and item.text() == model:
+                    size_item = self.models_table.item(row, 1)
+                    if size_item:
+                        model_size = f"\nDimensione: {size_item.text()}"
+                    break
+
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("Conferma Rimozione Modello")
+            msg.setText(f"Vuoi rimuovere il modello '{model}'?{model_size}")
+            msg.setInformativeText(
+                "Il modello verra' eliminato dal disco.\n"
+                "Potrai riscaricarlo in qualsiasi momento dal tab Modelli."
             )
-            if reply == QMessageBox.Yes:
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+            msg.button(QMessageBox.Yes).setText("Rimuovi")
+            msg.button(QMessageBox.No).setText("Annulla")
+
+            if msg.exec_() == QMessageBox.Yes:
                 self.main_window.run_command(
                     f"ollama rm {model} 2>/dev/null || docker exec ollama ollama rm {model}",
                     f"Rimozione {model}..."
                 )
-                # Aggiorna lista dopo rimozione
                 QTimer.singleShot(2000, self.refresh_models)
 
 
@@ -1369,7 +1445,105 @@ Usa un linguaggio chiaro, professionale e amichevole.
         msg.exec_()
 
     def update_openwebui(self):
-        self.main_window.run_command(f"{DOCKER_COMPOSE} pull && {DOCKER_COMPOSE} up -d", "Aggiornamento Open WebUI...")
+        """Controlla se c'e' una nuova versione e propone l'aggiornamento."""
+        import threading
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._update_btn_ref = self.sender()
+        if self._update_btn_ref:
+            self._update_btn_ref.setEnabled(False)
+            self._update_btn_ref.setText("Controllo...")
+
+        def _check_versions():
+            current = "?"
+            latest = "?"
+            latest_date = ""
+            changelog_url = ""
+            error = None
+
+            try:
+                import requests
+                # Versione attuale
+                try:
+                    resp = requests.get("http://localhost:3000/api/config", timeout=5)
+                    if resp.status_code == 200:
+                        current = resp.json().get("version", "?")
+                except:
+                    current = "non raggiungibile"
+
+                # Ultima versione da GitHub
+                resp = requests.get(
+                    "https://api.github.com/repos/open-webui/open-webui/releases/latest",
+                    timeout=10
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    latest = data.get("tag_name", "?").lstrip("v")
+                    latest_date = data.get("published_at", "")[:10]
+                    changelog_url = data.get("html_url", "")
+            except Exception as e:
+                error = str(e)
+
+            QTimer.singleShot(0, lambda: self._show_update_dialog(current, latest, latest_date, changelog_url, error))
+
+        threading.Thread(target=_check_versions, daemon=True).start()
+
+    def _show_update_dialog(self, current, latest, latest_date, changelog_url, error):
+        """Mostra il dialog di aggiornamento con confronto versioni."""
+        QApplication.restoreOverrideCursor()
+        if self._update_btn_ref:
+            self._update_btn_ref.setEnabled(True)
+            self._update_btn_ref.setText("⬆️ Aggiorna OpenWebUI")
+
+        if error:
+            QMessageBox.warning(self, "Errore Controllo Versione",
+                f"Impossibile verificare la versione:\n{error}\n\n"
+                f"Verifica la connessione internet.")
+            return
+
+        is_up_to_date = (current == latest)
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Aggiornamento Open WebUI")
+
+        if is_up_to_date:
+            msg.setIcon(QMessageBox.Information)
+            msg.setText(f"<b>Open WebUI e' gia' aggiornato!</b>")
+            msg.setInformativeText(
+                f"Versione installata: <b>{current}</b>\n"
+                f"Ultima disponibile: <b>{latest}</b> ({latest_date})\n\n"
+                f"Nessun aggiornamento necessario."
+            )
+            msg.setStandardButtons(QMessageBox.Ok)
+            if changelog_url:
+                msg.addButton("Novita'", QMessageBox.HelpRole)
+        else:
+            msg.setIcon(QMessageBox.Question)
+            msg.setText(f"<b>Nuova versione disponibile!</b>")
+            msg.setInformativeText(
+                f"Versione installata: <b>{current}</b>\n"
+                f"Nuova versione: <b>{latest}</b> ({latest_date})\n\n"
+                f"L'aggiornamento scarichera' la nuova immagine Docker\n"
+                f"e riavviera' i servizi. I tuoi dati saranno preservati."
+            )
+            update_btn = msg.addButton("Aggiorna Ora", QMessageBox.AcceptRole)
+            msg.addButton("Non Ora", QMessageBox.RejectRole)
+            if changelog_url:
+                msg.addButton("Novita'", QMessageBox.HelpRole)
+
+        result = msg.exec_()
+        clicked = msg.clickedButton()
+
+        if clicked and clicked.text() == "Novita'" and changelog_url:
+            import webbrowser
+            webbrowser.open(changelog_url)
+            return
+
+        if not is_up_to_date and clicked and clicked.text() == "Aggiorna Ora":
+            self.main_window.run_command(
+                f"{DOCKER_COMPOSE} pull && {DOCKER_COMPOSE} up -d",
+                "Aggiornamento Open WebUI..."
+            )
 
     def fix_openwebui(self):
         self.main_window.run_command(f"{DOCKER_COMPOSE} down && {DOCKER_COMPOSE} up -d --force-recreate", "Riparazione Open WebUI...")
@@ -1440,7 +1614,7 @@ class TTSWidget(QWidget):
         status_main_layout.setSpacing(8)
         status_main_layout.setContentsMargins(10, 12, 10, 10)
 
-        # Riga stato + pulsanti
+        # Riga stato + toggle + pulsanti
         status_row = QHBoxLayout()
         self.status_indicator = QLabel("●")
         self.status_indicator.setFont(QFont("Arial", 14))
@@ -1451,6 +1625,31 @@ class TTSWidget(QWidget):
         self.status_label.setFont(QFont("Arial", 10))
         status_row.addWidget(self.status_label)
         status_row.addStretch()
+
+        # Toggle TTS On/Off
+        self.tts_toggle_btn = QPushButton("TTS ON")
+        self.tts_toggle_btn.setCheckable(True)
+        self.tts_toggle_btn.setChecked(True)
+        self.tts_toggle_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 10px; font-weight: bold;
+                padding: 5px 12px;
+                border: 2px solid #27ae60;
+                border-radius: 12px;
+                background: #27ae60;
+                color: white;
+            }
+            QPushButton:checked {
+                background: #27ae60;
+                border-color: #27ae60;
+            }
+            QPushButton:!checked {
+                background: #e74c3c;
+                border-color: #e74c3c;
+            }
+        """)
+        self.tts_toggle_btn.clicked.connect(self.toggle_tts_service)
+        status_row.addWidget(self.tts_toggle_btn)
 
         self.start_service_btn = ModernButton("Avvia Servizio", "green")
         self.start_service_btn.clicked.connect(self.start_tts_service)
@@ -1814,6 +2013,36 @@ class TTSWidget(QWidget):
             # Refresh dopo un po'
             QTimer.singleShot(10000, self.check_service_status)
 
+    def toggle_tts_service(self):
+        """Toggle TTS on/off per liberare memoria."""
+        if self.tts_toggle_btn.isChecked():
+            self.tts_toggle_btn.setText("TTS ON")
+            self.start_tts_service()
+        else:
+            self.tts_toggle_btn.setText("TTS OFF")
+            self.stop_tts_service()
+
+    def stop_tts_service(self):
+        """Ferma il servizio TTS locale (porta 5556) per liberare memoria."""
+        try:
+            if IS_WINDOWS:
+                subprocess.run(['taskkill', '/f', '/im', 'python.exe'],
+                               capture_output=True, timeout=5)
+            else:
+                # Trova e termina il processo sulla porta 5556
+                result = subprocess.run(
+                    ['lsof', '-t', '-i:5556'],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.stdout.strip():
+                    for pid in result.stdout.strip().split('\n'):
+                        subprocess.run(['kill', pid.strip()], capture_output=True, timeout=3)
+            self.status_label.setText("Servizio TTS fermato - memoria liberata")
+            self.status_indicator.setStyleSheet("color: #95a5a6;")
+            QTimer.singleShot(2000, self.check_service_status)
+        except Exception as e:
+            self.status_label.setText(f"Errore stop: {e}")
+
     def start_tts_service(self):
         """Avvia servizio TTS locale."""
         if IS_WINDOWS:
@@ -1980,7 +2209,7 @@ class TTSWidget(QWidget):
         """Applica configurazione al docker-compose.yml."""
         compose_file = SCRIPT_DIR / "docker-compose.yml"
         if not compose_file.exists():
-            QMessageBox.warning(self, "Errore", "docker-compose.yml non trovato")
+            QMessageBox.warning(self, "Errore", "File di configurazione Docker (docker-compose.yml) non trovato")
             return
 
         reply = QMessageBox.question(
@@ -2173,11 +2402,12 @@ class ArchivioWidget(QWidget):
         btn_grid = QGridLayout()
         btn_grid.setSpacing(5)
 
-        self.export_base64_btn = QPushButton("📄 Base64")
+        self.export_base64_btn = QPushButton("📄 Esporta Testo")
         self.export_base64_btn.setMinimumHeight(32)
         self.export_base64_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.export_base64_btn.clicked.connect(self.export_to_base64)
         self.export_base64_btn.setEnabled(False)
+        self.export_base64_btn.setToolTip("Seleziona prima un file dalla lista")
         btn_grid.addWidget(self.export_base64_btn, 0, 0)
 
         self.open_file_btn = QPushButton("📂 Apri")
@@ -2185,6 +2415,7 @@ class ArchivioWidget(QWidget):
         self.open_file_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.open_file_btn.clicked.connect(self.open_selected_file)
         self.open_file_btn.setEnabled(False)
+        self.open_file_btn.setToolTip("Seleziona prima un file dalla lista")
         btn_grid.addWidget(self.open_file_btn, 0, 1)
 
         self.copy_path_btn = QPushButton("📋 Percorso")
@@ -2192,6 +2423,7 @@ class ArchivioWidget(QWidget):
         self.copy_path_btn.setStyleSheet("font-size: 11px; padding: 6px;")
         self.copy_path_btn.clicked.connect(self.copy_file_path)
         self.copy_path_btn.setEnabled(False)
+        self.copy_path_btn.setToolTip("Seleziona prima un file dalla lista")
         btn_grid.addWidget(self.copy_path_btn, 1, 0)
 
         self.copy_result_btn = QPushButton("📋 Copia Risultato")
@@ -2199,9 +2431,55 @@ class ArchivioWidget(QWidget):
         self.copy_result_btn.setStyleSheet("font-size: 11px; padding: 6px; background-color: #9b59b6; color: white;")
         self.copy_result_btn.clicked.connect(self.copy_result)
         self.copy_result_btn.setEnabled(False)
+        self.copy_result_btn.setToolTip("Esporta prima un file per copiare il risultato")
         btn_grid.addWidget(self.copy_result_btn, 1, 1)
 
         right_column.addLayout(btn_grid)
+
+        # === VOLUMI MONTATI ===
+        volumes_label = QLabel("<b>Cartelle collegate a Open WebUI:</b>")
+        volumes_label.setStyleSheet("font-size: 10px; color: #555; margin-top: 4px;")
+        right_column.addWidget(volumes_label)
+
+        self.volumes_list = QListWidget()
+        self.volumes_list.setMaximumHeight(90)
+        self.volumes_list.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                font-size: 10px;
+                background: #fafafa;
+            }
+            QListWidget::item { padding: 3px 6px; }
+            QListWidget::item:selected { background-color: #3498db; color: white; }
+        """)
+        right_column.addWidget(self.volumes_list)
+
+        vol_btn_row = QHBoxLayout()
+        vol_btn_row.setSpacing(4)
+
+        self.remove_volume_btn = QPushButton("🗑️ Scollega")
+        self.remove_volume_btn.setMinimumHeight(28)
+        self.remove_volume_btn.setStyleSheet("font-size: 10px; padding: 4px 8px; background-color: #e74c3c; color: white; border-radius: 3px;")
+        self.remove_volume_btn.setToolTip("Scollega la cartella selezionata da Open WebUI")
+        self.remove_volume_btn.clicked.connect(self.remove_volume_from_docker)
+        vol_btn_row.addWidget(self.remove_volume_btn)
+
+        self.restore_volume_btn = QPushButton("♻️ Ripristina")
+        self.restore_volume_btn.setMinimumHeight(28)
+        self.restore_volume_btn.setStyleSheet("font-size: 10px; padding: 4px 8px; background-color: #f39c12; color: white; border-radius: 3px;")
+        self.restore_volume_btn.setToolTip("Ricollega una cartella scollegata in precedenza")
+        self.restore_volume_btn.clicked.connect(self.restore_volume)
+        vol_btn_row.addWidget(self.restore_volume_btn)
+
+        self.refresh_volumes_btn = QPushButton("↻")
+        self.refresh_volumes_btn.setFixedWidth(28)
+        self.refresh_volumes_btn.setMinimumHeight(28)
+        self.refresh_volumes_btn.setToolTip("Aggiorna lista volumi")
+        self.refresh_volumes_btn.clicked.connect(self.refresh_volumes_list)
+        vol_btn_row.addWidget(self.refresh_volumes_btn)
+
+        right_column.addLayout(vol_btn_row)
 
         # Risultato esportazione
         result_label = QLabel("Risultato esportazione:")
@@ -2210,7 +2488,7 @@ class ArchivioWidget(QWidget):
 
         self.result_text = QTextEdit()
         self.result_text.setReadOnly(True)
-        self.result_text.setPlaceholderText("Seleziona un file e clicca Base64...")
+        self.result_text.setPlaceholderText("Seleziona un file e clicca Esporta Testo...")
         self.result_text.setFont(QFont("Monospace", 9))
         self.result_text.setStyleSheet("border: 1px solid #ddd; border-radius: 3px;")
         right_column.addWidget(self.result_text, 1)
@@ -2277,7 +2555,7 @@ class ArchivioWidget(QWidget):
 
         step2 = QLabel(
             "<div style='background: #fff; padding: 8px; border-left: 3px solid #f39c12; margin: 2px 0;'>"
-            "<b style='color: #f39c12;'>2.</b> <b>Copia nel docker-compose.yml</b></div>"
+            "<b style='color: #f39c12;'>2.</b> <b>Copia nel file di configurazione</b></div>"
         )
         step2.setWordWrap(True)
         step2.setStyleSheet("font-size: 11px;")
@@ -2315,15 +2593,222 @@ class ArchivioWidget(QWidget):
         layout.addWidget(config_group)
 
     def set_as_favorite(self):
-        """Imposta la cartella corrente come preferita"""
+        """Imposta la cartella corrente come preferita e aggiunge come volume Docker."""
         if self.current_path:
             self.settings.setValue("private_folder", self.current_path)
             self.star_btn.setStyleSheet("background-color: #f1c40f;")
+
+            # Aggiungi come volume Docker in docker-compose.yml
+            added = self._add_docker_volume(self.current_path)
+
             if self.main_window:
-                self.main_window.statusBar().showMessage(f"⭐ Cartella preferita: {self.current_path}", 3000)
+                if added:
+                    self.main_window.statusBar().showMessage(
+                        f"⭐ Cartella aggiunta come archivio documenti: {self.current_path}", 5000)
+                    QMessageBox.information(
+                        self, "Volume Docker Aggiunto",
+                        f"La cartella e' stata aggiunta al docker-compose.yml come volume:\n\n"
+                        f"  {self.current_path}:/app/backend/data/uploads/{Path(self.current_path).name}\n\n"
+                        f"Riavvia Docker per applicare le modifiche:\n"
+                        f"  docker compose down && docker compose up -d"
+                    )
+                else:
+                    self.main_window.statusBar().showMessage(
+                        f"⭐ Cartella preferita: {self.current_path}", 3000)
         else:
             if self.main_window:
                 self.main_window.statusBar().showMessage("Seleziona prima una cartella", 3000)
+
+    def _add_docker_volume(self, folder_path):
+        """Aggiunge una cartella come volume nel docker-compose.yml."""
+        compose_file = SCRIPT_DIR / "docker-compose.yml"
+        if not compose_file.exists():
+            return False
+
+        try:
+            content = compose_file.read_text()
+            folder_name = Path(folder_path).name
+            volume_line = f"      - {folder_path}:/app/backend/data/uploads/{folder_name}"
+
+            # Controlla se il volume esiste gia'
+            if folder_path in content:
+                return False
+
+            # Inserisci dopo "- open_webui_data:/app/backend/data" nella sezione volumes di open-webui
+            marker = "      - open_webui_data:/app/backend/data"
+            if marker in content:
+                content = content.replace(
+                    marker,
+                    f"{marker}\n{volume_line}"
+                )
+                compose_file.write_text(content)
+                return True
+        except Exception as e:
+            print(f"[Archivio] Errore aggiunta volume: {e}")
+        return False
+
+    def _remove_docker_volume(self, folder_path):
+        """Rimuove un volume dal docker-compose.yml."""
+        compose_file = SCRIPT_DIR / "docker-compose.yml"
+        if not compose_file.exists():
+            return False
+
+        try:
+            content = compose_file.read_text()
+            folder_name = Path(folder_path).name
+            volume_line = f"      - {folder_path}:/app/backend/data/uploads/{folder_name}\n"
+
+            if volume_line in content:
+                content = content.replace(volume_line, "")
+                compose_file.write_text(content)
+                return True
+        except Exception as e:
+            print(f"[Archivio] Errore rimozione volume: {e}")
+        return False
+
+    def _get_custom_volumes(self):
+        """Legge i volumi personalizzati dal docker-compose.yml."""
+        compose_file = SCRIPT_DIR / "docker-compose.yml"
+        if not compose_file.exists():
+            return []
+        try:
+            content = compose_file.read_text()
+            volumes = []
+            for line in content.splitlines():
+                stripped = line.strip()
+                # Cerca righe tipo "- /percorso:/app/backend/data/uploads/nome"
+                if stripped.startswith("- ") and ":/app/backend/data/uploads/" in stripped:
+                    local_path = stripped[2:].split(":")[0].strip()
+                    volumes.append(local_path)
+            return volumes
+        except:
+            return []
+
+    def refresh_volumes_list(self):
+        """Aggiorna la lista dei volumi montati nella UI."""
+        self.volumes_list.clear()
+        volumes = self._get_custom_volumes()
+        if volumes:
+            for vol in volumes:
+                folder_name = Path(vol).name
+                exists = Path(vol).exists()
+                icon = "📁" if exists else "⚠️"
+                item = QListWidgetItem(f"{icon} {folder_name}  ({vol})")
+                item.setData(Qt.UserRole, vol)
+                if not exists:
+                    item.setToolTip("Cartella non trovata sul disco")
+                    item.setForeground(Qt.gray)
+                self.volumes_list.addItem(item)
+        else:
+            item = QListWidgetItem("Nessuna cartella collegata")
+            item.setFlags(Qt.NoItemFlags)
+            item.setForeground(Qt.gray)
+            self.volumes_list.addItem(item)
+
+    def remove_volume_from_docker(self):
+        """Scollega la cartella selezionata dalla lista volumi."""
+        current_item = self.volumes_list.currentItem()
+        if not current_item:
+            QMessageBox.information(self, "Info", "Seleziona una cartella dalla lista per scollegarla.")
+            return
+
+        vol_path = current_item.data(Qt.UserRole)
+        if not vol_path:
+            return
+
+        folder_name = Path(vol_path).name
+        reply = QMessageBox.question(
+            self, "Conferma Scollegamento",
+            f"Scollegare la cartella da Open WebUI?\n\n"
+            f"  {folder_name}\n  ({vol_path})\n\n"
+            f"I file NON vengono cancellati dal disco.\n"
+            f"Potrai ripristinarla in qualsiasi momento.",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            removed = self._remove_docker_volume(vol_path)
+            if removed:
+                # Salva nella cronologia per ripristino
+                self._save_to_history(vol_path)
+                self.refresh_volumes_list()
+                QMessageBox.information(
+                    self, "Cartella Scollegata",
+                    f"'{folder_name}' scollegata da Open WebUI.\n\n"
+                    f"Riavvia Docker per applicare.\n"
+                    f"Usa 'Ripristina' per ricollegarla."
+                )
+            else:
+                QMessageBox.information(self, "Info", "Volume non trovato nel docker-compose.yml.")
+
+    def _save_to_history(self, folder_path):
+        """Salva un percorso nella cronologia per ripristino."""
+        history = self.settings.value("removed_volumes_history", [], type=list)
+        if folder_path not in history:
+            history.append(folder_path)
+            # Mantieni max 20 voci
+            if len(history) > 20:
+                history = history[-20:]
+            self.settings.setValue("removed_volumes_history", history)
+
+    def _get_history(self):
+        """Restituisce la cronologia dei volumi rimossi (esclude quelli gia' attivi)."""
+        history = self.settings.value("removed_volumes_history", [], type=list)
+        active = self._get_custom_volumes()
+        return [h for h in history if h not in active]
+
+    def restore_volume(self):
+        """Mostra i volumi rimossi in precedenza e permette di ripristinarne uno."""
+        available = self._get_history()
+
+        if not available:
+            QMessageBox.information(
+                self, "Nessun Ripristino Disponibile",
+                "Non ci sono cartelle scollegate da ripristinare.\n\n"
+                "Usa ⭐ per collegare una nuova cartella."
+            )
+            return
+
+        # Mostra lista scelta
+        items = [f"{Path(p).name}  ({p})" for p in available]
+        from PyQt5.QtWidgets import QInputDialog
+        choice, ok = QInputDialog.getItem(
+            self, "Ripristina Cartella",
+            "Seleziona la cartella da ricollegare a Open WebUI:",
+            items, 0, False
+        )
+        if ok and choice:
+            idx = items.index(choice)
+            folder_path = available[idx]
+
+            if not Path(folder_path).exists():
+                reply = QMessageBox.question(
+                    self, "Cartella Non Trovata",
+                    f"La cartella non esiste piu':\n{folder_path}\n\n"
+                    f"Rimuoverla dalla cronologia?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    history = self.settings.value("removed_volumes_history", [], type=list)
+                    history = [h for h in history if h != folder_path]
+                    self.settings.setValue("removed_volumes_history", history)
+                return
+
+            added = self._add_docker_volume(folder_path)
+            if added:
+                # Rimuovi dalla cronologia
+                history = self.settings.value("removed_volumes_history", [], type=list)
+                history = [h for h in history if h != folder_path]
+                self.settings.setValue("removed_volumes_history", history)
+
+                self.refresh_volumes_list()
+                folder_name = Path(folder_path).name
+                QMessageBox.information(
+                    self, "Cartella Ripristinata",
+                    f"'{folder_name}' ricollegata a Open WebUI.\n\n"
+                    f"Riavvia Docker per applicare le modifiche."
+                )
+            else:
+                QMessageBox.information(self, "Info", "La cartella risulta gia' collegata.")
 
     def copy_volume_config(self):
         """Copia la configurazione del volume Docker con il percorso attuale"""
@@ -2346,6 +2831,8 @@ class ArchivioWidget(QWidget):
             # Default: cartella home
             home = str(Path.home())
             self.set_private_folder(home)
+        # Carica lista volumi montati
+        self.refresh_volumes_list()
 
     def save_settings(self):
         """Salva le impostazioni"""
@@ -2561,7 +3048,7 @@ class InfoWidget(QWidget):
         desc_layout.addWidget(desc_info)
         layout.addWidget(desc_group)
 
-        # Ringraziamenti
+        # Ringraziamenti (compatto, max 5 righe)
         thanks_group = QGroupBox("Ringraziamenti")
         thanks_group.setFont(QFont("Arial", 12, QFont.Bold))
         thanks_layout = QVBoxLayout(thanks_group)
@@ -2569,23 +3056,16 @@ class InfoWidget(QWidget):
 
         thanks_info = QLabel(
             "<div style='text-align: center;'>"
-            "<p style='font-size: 14px; color: #2c3e50;'>"
-            "Grazie per aver scelto <b>Open WebUI Manager</b>.</p>"
-            "<p style='font-size: 12px; color: #555; margin-top: 10px;'>"
-            "Questo progetto nasce con l'obiettivo di rendere l'intelligenza artificiale "
-            "accessibile a tutti, garantendo <b>privacy</b> e <b>semplicità d'uso</b>.<br><br>"
-            "Tutti i dati rimangono sul tuo dispositivo. Nessuna informazione viene condivisa con terzi.</p>"
-            "<hr style='border: 1px solid #eee; margin: 15px 0;'>"
-            "<p style='font-size: 11px; color: #777;'>"
-            "<b>Sviluppato da:</b> Paolo Lo Bello<br>"
-            "<b>Licenza:</b> Open Source<br>"
-            "<b>Versione:</b> 1.1.0</p>"
-            "<hr style='border: 1px solid #eee; margin: 15px 0;'>"
-            "<p style='font-size: 11px;'>"
-            "<a href='https://github.com/wildlux/OWUIM' style='color: #333;'>🐙 GitHub</a> · "
-            "<a href='https://wildlux.pythonanywhere.com/' style='color: #27ae60;'>🌐 Sito Test Django</a> · "
-            "<a href='https://paololobello.altervista.org/' style='color: #e74c3c;'>📝 Blog</a> · "
-            "<a href='https://www.linkedin.com/in/paololobello/' style='color: #0077b5;'>💼 LinkedIn</a>"
+            "<p style='font-size: 12px; color: #2c3e50;'>"
+            "Grazie a questo software <b>open source</b>, scaricabile su "
+            "<a href='https://github.com/wildlux/OWUIM' style='color: #333;'>GitHub</a>, "
+            "puoi sfruttare il tuo computer per lavorare <b>offline</b> "
+            "e mantenere un profilo professionale senza dipendere da internet.<br>"
+            "Tutti i dati restano sul tuo dispositivo: <b>privacy totale</b>, nessuna informazione condivisa con terzi.<br>"
+            "Sviluppato da <b>Paolo Lo Bello</b> | Versione <b>1.1.0</b> | Licenza Open Source<br>"
+            "<a href='https://wildlux.pythonanywhere.com/' style='color: #27ae60;'>Sito</a> · "
+            "<a href='https://paololobello.altervista.org/' style='color: #e74c3c;'>Blog</a> · "
+            "<a href='https://www.linkedin.com/in/paololobello/' style='color: #0077b5;'>LinkedIn</a>"
             "</p>"
             "</div>"
         )
@@ -2595,6 +3075,50 @@ class InfoWidget(QWidget):
         thanks_layout.addWidget(thanks_info)
         layout.addWidget(thanks_group)
 
+        # === Scorciatoie Tastiera + Supporto (layout a due colonne) ===
+        bottom_row = QHBoxLayout()
+        bottom_row.setSpacing(15)
+
+        # Scorciatoie tastiera
+        shortcuts_group = QGroupBox("Scorciatoie Tastiera")
+        shortcuts_group.setFont(QFont("Arial", 11, QFont.Bold))
+        shortcuts_layout = QVBoxLayout(shortcuts_group)
+        shortcuts_layout.setContentsMargins(15, 18, 15, 12)
+
+        shortcuts_info = QLabel(
+            "<table style='font-size: 11px;'>"
+            "<tr><td><b>Ctrl+1..8</b></td><td style='padding-left:12px;'>Passa al tab corrispondente</td></tr>"
+            "<tr><td><b>Ctrl+R</b></td><td style='padding-left:12px;'>Aggiorna stato servizi</td></tr>"
+            "<tr><td><b>Ctrl+B</b></td><td style='padding-left:12px;'>Apri Open WebUI nel browser</td></tr>"
+            "</table>"
+        )
+        shortcuts_info.setWordWrap(True)
+        shortcuts_layout.addWidget(shortcuts_info)
+        bottom_row.addWidget(shortcuts_group, 1)
+
+        # Supporto e segnalazioni
+        support_group = QGroupBox("Supporto")
+        support_group.setFont(QFont("Arial", 11, QFont.Bold))
+        support_layout = QVBoxLayout(support_group)
+        support_layout.setContentsMargins(15, 18, 15, 12)
+
+        report_btn = QPushButton("🐛 Segnala un Problema")
+        report_btn.setStyleSheet(
+            "font-size: 11px; padding: 8px 16px; background-color: #e74c3c; "
+            "color: white; border-radius: 4px; font-weight: bold;")
+        report_btn.setToolTip("Apri GitHub Issues per segnalare un bug o proporre un miglioramento")
+        report_btn.clicked.connect(lambda: __import__('webbrowser').open("https://github.com/wildlux/OWUIM/issues"))
+        support_layout.addWidget(report_btn)
+
+        support_label = QLabel(
+            "<span style='font-size: 10px; color: #7f8c8d;'>"
+            "Descrivi il problema e includi eventuali messaggi di errore</span>")
+        support_label.setWordWrap(True)
+        support_layout.addWidget(support_label)
+
+        bottom_row.addWidget(support_group, 1)
+
+        layout.addLayout(bottom_row)
         layout.addStretch()
 
 
@@ -2605,6 +3129,8 @@ class MCPWidget(QWidget):
         self.main_window = parent
         self.mcp_service_url = "http://localhost:5558"
         self.setup_ui()
+        # Check iniziale stato servizi dopo che la UI e' pronta
+        QTimer.singleShot(1500, self.check_service_status)
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
@@ -2748,14 +3274,33 @@ class MCPWidget(QWidget):
         services_layout.setSpacing(6)
         services_layout.setContentsMargins(10, 12, 10, 10)
 
+        # Stili pulsanti servizi
+        self._svc_btn_style_off = "font-size: 9px; padding: 2px 6px; background: #27ae60; color: white; border-radius: 3px;"
+        self._svc_btn_style_on = "font-size: 9px; padding: 2px 6px; background: #e74c3c; color: white; border-radius: 3px;"
+        self._svc_btn_style_checking = "font-size: 9px; padding: 2px 6px; background: #f39c12; color: white; border-radius: 3px;"
+
+        # Mappa servizi: (label, porta, url health check)
+        self._sub_services = {
+            "tts": {"label": "TTS", "icon": "🔊", "port": 5556, "url": "http://localhost:5556/"},
+            "image": {"label": "Image", "icon": "🖼️", "port": 5555, "url": "http://localhost:5555/"},
+            "document": {"label": "Document", "icon": "📄", "port": 5557, "url": "http://localhost:5557/"},
+        }
+        self._svc_running = {"tts": False, "image": False, "document": False}
+
         # TTS Service
         tts_row = QHBoxLayout()
         self.tts_status = QLabel("●")
         self.tts_status.setFixedWidth(14)
         self.tts_status.setStyleSheet("color: #bdc3c7;")
         tts_row.addWidget(self.tts_status)
-        tts_row.addWidget(QLabel("🔊 <b>TTS</b> :5556"))
+        self.tts_label = QLabel("🔊 <b>TTS</b> :5556")
+        tts_row.addWidget(self.tts_label)
         tts_row.addStretch()
+        self.tts_start_btn = QPushButton("Verifica...")
+        self.tts_start_btn.setFixedWidth(80)
+        self.tts_start_btn.setStyleSheet(self._svc_btn_style_checking)
+        self.tts_start_btn.clicked.connect(lambda: self._toggle_sub_service("tts"))
+        tts_row.addWidget(self.tts_start_btn)
         services_layout.addLayout(tts_row)
 
         # Image Service
@@ -2764,8 +3309,14 @@ class MCPWidget(QWidget):
         self.img_status.setFixedWidth(14)
         self.img_status.setStyleSheet("color: #bdc3c7;")
         img_row.addWidget(self.img_status)
-        img_row.addWidget(QLabel("🖼️ <b>Image</b> :5555"))
+        self.img_label = QLabel("🖼️ <b>Image</b> :5555")
+        img_row.addWidget(self.img_label)
         img_row.addStretch()
+        self.img_start_btn = QPushButton("Verifica...")
+        self.img_start_btn.setFixedWidth(80)
+        self.img_start_btn.setStyleSheet(self._svc_btn_style_checking)
+        self.img_start_btn.clicked.connect(lambda: self._toggle_sub_service("image"))
+        img_row.addWidget(self.img_start_btn)
         services_layout.addLayout(img_row)
 
         # Document Service
@@ -2774,9 +3325,21 @@ class MCPWidget(QWidget):
         self.doc_status.setFixedWidth(14)
         self.doc_status.setStyleSheet("color: #bdc3c7;")
         doc_row.addWidget(self.doc_status)
-        doc_row.addWidget(QLabel("📄 <b>Document</b> :5557"))
+        self.doc_label = QLabel("📄 <b>Document</b> :5557")
+        doc_row.addWidget(self.doc_label)
         doc_row.addStretch()
+        self.doc_start_btn = QPushButton("Verifica...")
+        self.doc_start_btn.setFixedWidth(80)
+        self.doc_start_btn.setStyleSheet(self._svc_btn_style_checking)
+        self.doc_start_btn.clicked.connect(lambda: self._toggle_sub_service("document"))
+        doc_row.addWidget(self.doc_start_btn)
         services_layout.addLayout(doc_row)
+
+        # Pulsante avvia tutti i servizi
+        start_all_btn = ModernButton("Avvia Tutti i Servizi", "blue")
+        start_all_btn.setToolTip("Avvia TTS, Image e Document in un colpo solo")
+        start_all_btn.clicked.connect(self._start_all_sub_services)
+        services_layout.addWidget(start_all_btn)
 
         services_layout.addStretch()
         row3.addWidget(services_group, 1)
@@ -3132,7 +3695,12 @@ class MCPWidget(QWidget):
 
             QTimer.singleShot(3000, self.check_service_status)
         except Exception as e:
-            QMessageBox.warning(self, "Errore", f"Impossibile avviare il servizio:\n{e}")
+            QMessageBox.warning(self, "Errore Avvio MCP",
+                f"Impossibile avviare il servizio:\n{e}\n\n"
+                f"Suggerimenti:\n"
+                f"- Verifica che Python sia installato\n"
+                f"- Controlla che la porta 5558 sia libera\n"
+                f"- Prova ad avviare manualmente: python3 mcp_service/mcp_service.py")
 
     def stop_mcp_service(self):
         """Ferma il servizio MCP."""
@@ -3154,62 +3722,81 @@ class MCPWidget(QWidget):
                 self.check_timer.stop()
 
         except Exception as e:
-            QMessageBox.warning(self, "Errore", f"Impossibile fermare il servizio:\n{e}")
+            QMessageBox.warning(self, "Errore Arresto MCP",
+                f"Impossibile fermare il servizio:\n{e}\n\n"
+                f"Prova manualmente: pkill -f mcp_service.py")
 
     def check_service_status(self):
-        """Verifica lo stato del servizio MCP e dei servizi collegati."""
-        try:
-            import requests
-            resp = requests.get(self.mcp_service_url, timeout=3)
-            if resp.status_code == 200:
-                data = resp.json()
-                self.status_indicator.setStyleSheet("color: #27ae60;")
-                self.status_label.setText(f"Attivo - {data.get('tools_count', 0)} tools disponibili")
-                self.start_service_btn.setEnabled(False)
-                self.stop_service_btn.setEnabled(True)
+        """Verifica lo stato di tutti i servizi in un thread separato (non blocca la GUI)."""
+        if hasattr(self, '_status_checking') and self._status_checking:
+            return  # Evita check sovrapposti
+        self._status_checking = True
 
-                # Aggiorna stato servizi
-                services = data.get("services", {})
-                self._update_service_status(self.tts_status, services.get("tts", {}).get("available", False))
-                self._update_service_status(self.img_status, services.get("image", {}).get("available", False))
-                self._update_service_status(self.doc_status, services.get("document", {}).get("available", False))
+        import threading
 
-                # Aggiorna lista tools
-                self._update_tools_list()
-            else:
-                self._set_offline()
-        except:
-            self._set_offline()
+        def _do_check():
+            import requests as req
+            results = {"mcp": False, "mcp_data": None, "tools": [], "services": {}}
 
-    def _set_offline(self):
-        """Imposta stato offline."""
-        self.status_indicator.setStyleSheet("color: #bdc3c7;")
-        self.status_label.setText("Non attivo")
-        self.start_service_btn.setEnabled(True)
-        self.stop_service_btn.setEnabled(False)
-        self.tts_status.setStyleSheet("color: #bdc3c7;")
-        self.img_status.setStyleSheet("color: #bdc3c7;")
-        self.doc_status.setStyleSheet("color: #bdc3c7;")
+            # Check MCP
+            try:
+                resp = req.get(self.mcp_service_url, timeout=2)
+                if resp.status_code == 200:
+                    results["mcp"] = True
+                    results["mcp_data"] = resp.json()
+            except:
+                pass
 
-    def _update_service_status(self, indicator, available):
-        """Aggiorna indicatore servizio."""
-        if available:
-            indicator.setStyleSheet("color: #27ae60;")
+            # Check tools (solo se MCP attivo)
+            if results["mcp"]:
+                try:
+                    resp = req.get(f"{self.mcp_service_url}/tools", timeout=2)
+                    if resp.status_code == 200:
+                        results["tools"] = resp.json().get("tools", [])
+                except:
+                    pass
+
+            # Check sotto-servizi direttamente
+            for svc_name, svc_info in self._sub_services.items():
+                try:
+                    resp = req.get(svc_info["url"], timeout=1)
+                    results["services"][svc_name] = resp.status_code == 200
+                except:
+                    results["services"][svc_name] = False
+
+            # Aggiorna la UI dal thread principale via QTimer
+            QTimer.singleShot(0, lambda: self._apply_status_results(results))
+
+        threading.Thread(target=_do_check, daemon=True).start()
+
+    def _apply_status_results(self, results):
+        """Applica i risultati del check alla UI (chiamato nel thread principale)."""
+        self._status_checking = False
+
+        # Aggiorna stato MCP
+        if results["mcp"] and results["mcp_data"]:
+            data = results["mcp_data"]
+            self.status_indicator.setStyleSheet("color: #27ae60;")
+            self.status_label.setText(f"Attivo - {data.get('tools_count', 0)} tools disponibili")
+            self.start_service_btn.setEnabled(False)
+            self.stop_service_btn.setEnabled(True)
         else:
-            indicator.setStyleSheet("color: #e74c3c;")
+            self.status_indicator.setStyleSheet("color: #bdc3c7;")
+            self.status_label.setText("MCP non attivo")
+            self.start_service_btn.setEnabled(True)
+            self.stop_service_btn.setEnabled(False)
 
-    def _update_tools_list(self):
-        """Aggiorna lista tools."""
-        try:
-            import requests
-            resp = requests.get(f"{self.mcp_service_url}/tools", timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                tools = data.get("tools", [])
-                text = "\n".join([f"• {t['name']}: {t['description']}" for t in tools])
-                self.tools_list.setPlainText(text if text else "Nessun tool disponibile")
-        except:
-            pass
+        # Aggiorna tools
+        if results["tools"]:
+            text = "\n".join([f"• {t['name']}: {t['description']}" for t in results["tools"]])
+            self.tools_list.setPlainText(text)
+        elif results["mcp"]:
+            self.tools_list.setPlainText("Nessun tool disponibile")
+
+        # Aggiorna sotto-servizi
+        for svc_name, is_running in results["services"].items():
+            self._svc_running[svc_name] = is_running
+            self._update_svc_button(svc_name, is_running)
 
     def _copy_to_clipboard(self, text):
         """Copia testo negli appunti."""
@@ -3218,12 +3805,169 @@ class MCPWidget(QWidget):
         clipboard.setText(text)
         QMessageBox.information(self, "Copiato", f"Copiato negli appunti:\n{text}")
 
+    def _get_svc_button(self, service_name):
+        """Restituisce il pulsante e l'indicatore per un servizio."""
+        mapping = {
+            "tts": (self.tts_start_btn, self.tts_status, self.tts_label),
+            "image": (self.img_start_btn, self.img_status, self.img_label),
+            "document": (self.doc_start_btn, self.doc_status, self.doc_label),
+        }
+        return mapping.get(service_name, (None, None, None))
+
+    def _check_sub_service_direct(self, service_name):
+        """Verifica direttamente se un servizio e' attivo (senza passare da MCP)."""
+        svc_info = self._sub_services.get(service_name)
+        if not svc_info:
+            return False
+        try:
+            import requests
+            resp = requests.get(svc_info["url"], timeout=1)
+            return resp.status_code == 200
+        except:
+            return False
+
+    def _update_svc_button(self, service_name, is_running):
+        """Aggiorna testo e stile del pulsante in base allo stato."""
+        btn, indicator, label = self._get_svc_button(service_name)
+        if not btn:
+            return
+        self._svc_running[service_name] = is_running
+        svc_info = self._sub_services[service_name]
+        if is_running:
+            btn.setText("Ferma")
+            btn.setStyleSheet(self._svc_btn_style_on)
+            indicator.setStyleSheet("color: #27ae60;")
+            label.setText(f"{svc_info['icon']} <b>{svc_info['label']}</b> :{svc_info['port']} - <span style='color:#27ae60;'>Attivo</span>")
+        else:
+            btn.setText("Avvia")
+            btn.setStyleSheet(self._svc_btn_style_off)
+            indicator.setStyleSheet("color: #bdc3c7;")
+            label.setText(f"{svc_info['icon']} <b>{svc_info['label']}</b> :{svc_info['port']}")
+
+    def _toggle_sub_service(self, service_name):
+        """Avvia o ferma un servizio in base allo stato attuale."""
+        is_running = self._check_sub_service_direct(service_name)
+        if is_running:
+            self._stop_sub_service(service_name)
+        else:
+            self._start_sub_service(service_name)
+
+    def _start_sub_service(self, service_name):
+        """Avvia un singolo servizio (tts, image, document)."""
+        # Prima controlla se gia' attivo
+        if self._check_sub_service_direct(service_name):
+            self._update_svc_button(service_name, True)
+            self.status_label.setText(f"{service_name.upper()} gia' attivo")
+            return
+
+        service_scripts = {
+            "tts": ("tts_service/tts_local.py", 5556),
+            "image": ("image_analysis/image_service.py", 5555),
+            "document": ("document_service/document_service.py", 5557),
+        }
+        script, port = service_scripts.get(service_name, (None, None))
+        if not script:
+            return
+
+        script_path = SCRIPT_DIR / script
+        if not script_path.exists():
+            QMessageBox.warning(self, "Errore", f"File non trovato: {script}")
+            return
+
+        btn, _, _ = self._get_svc_button(service_name)
+        if btn:
+            btn.setText("Avvio...")
+            btn.setStyleSheet(self._svc_btn_style_checking)
+            btn.setEnabled(False)
+
+        try:
+            if IS_WINDOWS:
+                subprocess.Popen(
+                    ['cmd', '/c', 'start', service_name, 'python', str(script_path)],
+                    cwd=SCRIPT_DIR
+                )
+            else:
+                subprocess.Popen(
+                    ['python3', str(script_path)],
+                    cwd=SCRIPT_DIR,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            self.status_label.setText(f"Avvio {service_name} in corso...")
+            # Ricontrolla dopo 3 secondi
+            QTimer.singleShot(3000, lambda: self._verify_after_start(service_name))
+        except Exception as e:
+            if btn:
+                btn.setEnabled(True)
+            self._update_svc_button(service_name, False)
+            svc_info = self._sub_services.get(service_name, {})
+            port = svc_info.get("port", "?")
+            QMessageBox.warning(self, f"Errore Avvio {service_name.upper()}",
+                f"Impossibile avviare {service_name}:\n{e}\n\n"
+                f"Suggerimenti:\n"
+                f"- Verifica che la porta {port} sia libera\n"
+                f"- Controlla i log per maggiori dettagli")
+
+    def _verify_after_start(self, service_name):
+        """Verifica se il servizio e' partito dopo l'avvio."""
+        btn, _, _ = self._get_svc_button(service_name)
+        if btn:
+            btn.setEnabled(True)
+        is_running = self._check_sub_service_direct(service_name)
+        self._update_svc_button(service_name, is_running)
+        if is_running:
+            self.status_label.setText(f"{service_name.upper()} avviato")
+        else:
+            self.status_label.setText(f"{service_name.upper()} non risponde - riprova")
+        self.check_service_status()
+
+    def _stop_sub_service(self, service_name):
+        """Ferma un singolo servizio."""
+        svc_info = self._sub_services.get(service_name)
+        if not svc_info:
+            return
+        port = svc_info["port"]
+        try:
+            if IS_WINDOWS:
+                subprocess.run(
+                    ["powershell", "-Command",
+                     f"Get-NetTCPConnection -LocalPort {port} -ErrorAction SilentlyContinue | "
+                     f"ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force }}"],
+                    capture_output=True, timeout=5
+                )
+            else:
+                subprocess.run(
+                    ["fuser", "-k", f"{port}/tcp"],
+                    capture_output=True, timeout=5
+                )
+            self.status_label.setText(f"{service_name.upper()} fermato")
+        except Exception as e:
+            self.status_label.setText(f"Errore fermando {service_name}: {e}")
+        # Ricontrolla dopo 1 secondo
+        QTimer.singleShot(1000, lambda: self._update_svc_button(
+            service_name, self._check_sub_service_direct(service_name)))
+
+    def _start_all_sub_services(self):
+        """Avvia tutti i servizi non ancora attivi."""
+        started = 0
+        for svc in ["tts", "image", "document"]:
+            if not self._check_sub_service_direct(svc):
+                self._start_sub_service(svc)
+                started += 1
+        if started == 0:
+            self.status_label.setText("Tutti i servizi sono gia' attivi")
+        else:
+            self.status_label.setText(f"Avvio di {started} servizi...")
+            QTimer.singleShot(5000, self.check_service_status)
+
     def run_test_tts(self):
         """Esegue test TTS via MCP Bridge."""
         text = self.test_text_input.text().strip()
         if not text:
             text = "Ciao, questo è un test!"
+            self.test_text_input.setText(text)
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         self.test_result.setPlainText("⏳ Test TTS in corso...")
 
         try:
@@ -3255,9 +3999,11 @@ class MCPWidget(QWidget):
                 self.test_result.setPlainText(f"❌ Errore TTS:\n{data.get('error', 'Errore sconosciuto')}")
 
         except requests.exceptions.ConnectionError:
-            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\nAvvia il servizio prima di testare.")
+            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\n\nCosa fare:\n1. Vai alla sezione 'MCP Bridge Service' qui sopra\n2. Clicca 'Avvia Servizio'\n3. Attendi che lo stato diventi verde\n4. Riprova il test")
         except Exception as e:
             self.test_result.setPlainText(f"❌ Errore: {e}")
+        finally:
+            QApplication.restoreOverrideCursor()
 
     def run_test_services(self):
         """Verifica stato di tutti i servizi."""
@@ -3277,7 +4023,7 @@ class MCPWidget(QWidget):
             self.test_result.setPlainText("\n".join(lines))
 
         except requests.exceptions.ConnectionError:
-            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\nAvvia il servizio prima di testare.")
+            self.test_result.setPlainText("❌ Servizio MCP non raggiungibile.\n\nCosa fare:\n1. Vai alla sezione 'MCP Bridge Service' qui sopra\n2. Clicca 'Avvia Servizio'\n3. Attendi che lo stato diventi verde\n4. Riprova il test")
         except Exception as e:
             self.test_result.setPlainText(f"❌ Errore: {e}")
 
@@ -3391,6 +4137,23 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self.tabs)
 
+        # === SCORCIATOIE TASTIERA (H7 - Flexibility & Efficiency) ===
+        from PyQt5.QtWidgets import QShortcut
+        from PyQt5.QtGui import QKeySequence
+
+        # Ctrl+1..8 per navigare tra i tab
+        for i in range(min(8, self.tabs.count())):
+            shortcut = QShortcut(QKeySequence(f"Ctrl+{i+1}"), self)
+            shortcut.activated.connect(lambda idx=i: self.tabs.setCurrentIndex(idx))
+
+        # Ctrl+R = Refresh stato servizi
+        refresh_shortcut = QShortcut(QKeySequence("Ctrl+R"), self)
+        refresh_shortcut.activated.connect(self.dashboard.update_system_info)
+
+        # Ctrl+B = Apri browser Open WebUI
+        browser_shortcut = QShortcut(QKeySequence("Ctrl+B"), self)
+        browser_shortcut.activated.connect(self.dashboard.open_browser)
+
         # Barra inferiore con info + controlli
         bottom_bar = QHBoxLayout()
         bottom_bar.setContentsMargins(10, 5, 10, 5)
@@ -3419,6 +4182,7 @@ class MainWindow(QMainWindow):
             QPushButton:hover { background: #3498db; color: white; }
         """)
         self.font_minus_btn.clicked.connect(self.decrease_font_size)
+        self.font_minus_btn.setToolTip("Riduci dimensione testo")
         bottom_bar.addWidget(self.font_minus_btn)
 
         self.font_size_label = QLabel("100%")
@@ -3437,6 +4201,7 @@ class MainWindow(QMainWindow):
             QPushButton:hover { background: #3498db; color: white; }
         """)
         self.font_plus_btn.clicked.connect(self.increase_font_size)
+        self.font_plus_btn.setToolTip("Aumenta dimensione testo")
         bottom_bar.addWidget(self.font_plus_btn)
 
         # Separatore
@@ -3462,7 +4227,29 @@ class MainWindow(QMainWindow):
             }
         """)
         self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
+        self.dark_mode_btn.setToolTip("Passa al tema scuro/chiaro")
         bottom_bar.addWidget(self.dark_mode_btn)
+
+        # Toggle Lingua IT/EN
+        self.current_lang = "it"
+        self.lang_btn = QPushButton("🇮🇹")
+        self.lang_btn.setFixedSize(32, 28)
+        self.lang_btn.setStyleSheet("""
+            QPushButton {
+                font-size: 16px;
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                background: #ecf0f1;
+                padding: 0px;
+            }
+            QPushButton:hover {
+                background: #3498db;
+                border-color: #3498db;
+            }
+        """)
+        self.lang_btn.setToolTip("Cambia lingua / Change language")
+        self.lang_btn.clicked.connect(self.toggle_language)
+        bottom_bar.addWidget(self.lang_btn)
 
         layout.addLayout(bottom_bar)
 
@@ -3474,6 +4261,13 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("OpenWebUI", "Manager")
         self.base_font_size = 10  # Font size di base
         self.font_scale = self.settings.value("font_scale", 100, type=int)
+
+        # Lingua salvata
+        saved_lang = self.settings.value("language", "it")
+        if saved_lang == "en":
+            self.current_lang = "en"
+            self.lang_btn.setText("🇬🇧")
+            QTimer.singleShot(100, self.retranslate_ui)
         self.font_save_timer = QTimer()
         self.font_save_timer.setSingleShot(True)
         self.font_save_timer.timeout.connect(self.save_font_setting)
@@ -3484,6 +4278,9 @@ class MainWindow(QMainWindow):
 
         # Timer per controllo voci TTS all'avvio
         QTimer.singleShot(2000, self.check_tts_voices_on_startup)
+
+        # Timer per suggerimento MCP su PC potenti
+        QTimer.singleShot(4000, self.check_mcp_suggestion)
 
     def check_tts_voices_on_startup(self):
         """
@@ -3525,6 +4322,65 @@ class MainWindow(QMainWindow):
         except Exception as e:
             # Ignora altri errori silenziosamente
             print(f"[TTS Check] Errore: {e}")
+
+    def check_mcp_suggestion(self):
+        """Se il PC ha >8GB RAM, suggerisce di abilitare MCP."""
+        if not HAS_PROFILER:
+            return
+        try:
+            profile = get_system_profile()
+            # Solo se tier MEDIUM o HIGH e MCP non gia' abilitato
+            if profile.tier in (SystemTier.MEDIUM, SystemTier.HIGH):
+                # Controlla se MCP e' gia' attivo
+                try:
+                    import requests
+                    resp = requests.get("http://localhost:5558/", timeout=2)
+                    if resp.status_code == 200:
+                        return  # MCP gia' attivo, non serve suggerire
+                except:
+                    pass
+
+                # Controlla se l'utente ha gia' detto "Non ora"
+                if self.settings.value("mcp_suggestion_dismissed", False, type=bool):
+                    return
+
+                msg_box = QMessageBox(self)
+                msg_box.setIcon(QMessageBox.Information)
+                msg_box.setWindowTitle("Supporto AI Avanzato")
+                gpu_text = f" e GPU {profile.gpu_name}" if profile.has_gpu and profile.gpu_name else ""
+                msg_box.setText(
+                    f"<b>Ho notato che il tuo computer supporta nativamente l'AI</b><br>"
+                    f"({profile.ram_total_gb:.0f} GB RAM{gpu_text})"
+                )
+                msg_box.setInformativeText(
+                    "Posso abilitare MCP (Model Context Protocol) per offrirti "
+                    "il massimo di prestazioni sulle risposte?\n\n"
+                    "MCP collega i servizi TTS, Analisi Immagini e Documenti "
+                    "per un'esperienza AI completa."
+                )
+                btn_enable = msg_box.addButton("Abilita MCP", QMessageBox.AcceptRole)
+                btn_later = msg_box.addButton("Non ora", QMessageBox.RejectRole)
+                msg_box.setDefaultButton(btn_enable)
+                msg_box.exec_()
+
+                if msg_box.clickedButton() == btn_enable:
+                    # Avvia MCP Bridge
+                    subprocess.Popen(
+                        ['python3', 'mcp_service/mcp_service.py'],
+                        cwd=SCRIPT_DIR,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                    self.statusBar().showMessage("MCP Bridge avviato sulla porta 5558")
+                    # Vai al tab MCP
+                    for i in range(self.tabs.count()):
+                        if "MCP" in self.tabs.tabText(i):
+                            self.tabs.setCurrentIndex(i)
+                            break
+                else:
+                    self.settings.setValue("mcp_suggestion_dismissed", True)
+        except Exception as e:
+            print(f"[MCP Check] Errore: {e}")
 
     def setup_tray(self):
         """Configura icona nel system tray"""
@@ -3726,6 +4582,7 @@ class MainWindow(QMainWindow):
 
     def run_command(self, command, message="Esecuzione..."):
         """Esegue un comando in background"""
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         self.statusBar().showMessage(message)
         self.tabs.setCurrentWidget(self.logs)
         self.logs.clear_logs()
@@ -3737,6 +4594,7 @@ class MainWindow(QMainWindow):
         self.worker.start()
 
     def command_finished(self, code):
+        QApplication.restoreOverrideCursor()
         if code == 0:
             self.statusBar().showMessage("Completato con successo")
             self.logs.append_log("\n✓ Completato")
@@ -3803,6 +4661,45 @@ class MainWindow(QMainWindow):
         self.qr_status_label.setText(f"QR-Code LAN: {qr_icon}")
         # Aggiorna ogni 5 secondi
         QTimer.singleShot(5000, self.update_qr_status)
+
+    def toggle_language(self):
+        """Alterna tra italiano e inglese."""
+        if self.current_lang == "it":
+            self.current_lang = "en"
+            self.lang_btn.setText("🇬🇧")
+        else:
+            self.current_lang = "it"
+            self.lang_btn.setText("🇮🇹")
+        self.settings.setValue("language", self.current_lang)
+        self.retranslate_ui()
+
+    def tr_text(self, key, **kwargs):
+        """Ritorna testo tradotto nella lingua corrente."""
+        return get_text(key, self.current_lang, **kwargs)
+
+    def retranslate_ui(self):
+        """Aggiorna tutte le stringhe UI nella lingua corrente."""
+        lang = self.current_lang
+        t = lambda key, **kw: get_text(key, lang, **kw)
+
+        # Tab names
+        tab_keys = ["tab_dashboard", "tab_logs", "tab_models", "tab_archive",
+                     "tab_voice", "tab_mcp", "tab_config", "tab_info"]
+        for i, key in enumerate(tab_keys):
+            if i < self.tabs.count():
+                self.tabs.setTabText(i, t(key))
+
+        # Window title
+        self.setWindowTitle(t("window_title"))
+
+        # Status bar
+        self.statusBar().showMessage(t("ready"))
+
+        # Bottom bar
+        if not self.dark_mode_btn.isChecked():
+            self.dark_mode_btn.setText(t("dark_mode"))
+        else:
+            self.dark_mode_btn.setText(t("light_mode"))
 
     def closeEvent(self, event):
         """Minimizza nel tray invece di chiudere"""

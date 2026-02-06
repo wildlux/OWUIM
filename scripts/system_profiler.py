@@ -59,6 +59,11 @@ class SystemProfile:
     ram_warning_threshold: float  # % RAM oltre cui avvisare
     ram_critical_threshold: float  # % RAM oltre cui bloccare nuove operazioni
 
+    # Info dettagliate (con default per retrocompatibilita')
+    gpu_name: str = ""
+    gpu_vram_gb: float = 0.0
+    cpu_name: str = ""
+
 
 # ============================================================================
 # CONFIGURAZIONE PER TIER
@@ -194,29 +199,54 @@ def get_cpu_info() -> Tuple[int, float]:
     return (cores, 0.0)
 
 
-def detect_gpu() -> bool:
-    """Rileva se è disponibile una GPU per accelerazione."""
+def detect_gpu() -> Tuple[bool, str, float]:
+    """Rileva GPU, nome e VRAM. Ritorna (has_gpu, gpu_name, gpu_vram_gb)."""
     # Controlla NVIDIA
     try:
         import subprocess
         result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
-            capture_output=True,
-            timeout=5
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0 and result.stdout.strip():
-            return True
+            line = result.stdout.strip().split('\n')[0]
+            parts = [p.strip() for p in line.split(',')]
+            gpu_name = parts[0] if parts else "NVIDIA GPU"
+            gpu_vram_mb = float(parts[1]) if len(parts) > 1 else 0
+            gpu_vram_gb = round(gpu_vram_mb / 1024, 1)
+            return (True, gpu_name, gpu_vram_gb)
     except:
         pass
 
     # Controlla AMD ROCm
     try:
         if os.path.exists("/opt/rocm"):
-            return True
+            return (True, "AMD ROCm GPU", 0.0)
     except:
         pass
 
-    return False
+    return (False, "", 0.0)
+
+
+def get_cpu_name() -> str:
+    """Rileva il nome della CPU."""
+    try:
+        if platform.system() == "Linux":
+            with open("/proc/cpuinfo", "r") as f:
+                for line in f:
+                    if "model name" in line:
+                        return line.split(":")[1].strip()
+        elif platform.system() == "Windows":
+            return platform.processor() or "CPU"
+        elif platform.system() == "Darwin":
+            import subprocess
+            result = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"],
+                                    capture_output=True, text=True, timeout=3)
+            if result.returncode == 0:
+                return result.stdout.strip()
+    except:
+        pass
+    return f"{os.cpu_count() or '?'} core CPU"
 
 
 def determine_tier(ram_total_gb: float, ram_available_gb: float, cpu_cores: int) -> SystemTier:
@@ -244,7 +274,8 @@ def get_system_profile(force_tier: Optional[SystemTier] = None) -> SystemProfile
     """
     ram_total, ram_available, ram_percent = get_ram_info()
     cpu_cores, cpu_percent = get_cpu_info()
-    has_gpu = detect_gpu()
+    has_gpu, gpu_name, gpu_vram_gb = detect_gpu()
+    cpu_name = get_cpu_name()
 
     if force_tier:
         tier = force_tier
@@ -261,6 +292,9 @@ def get_system_profile(force_tier: Optional[SystemTier] = None) -> SystemProfile
         cpu_cores=cpu_cores,
         cpu_percent=round(cpu_percent, 1),
         has_gpu=has_gpu,
+        gpu_name=gpu_name,
+        gpu_vram_gb=gpu_vram_gb,
+        cpu_name=cpu_name,
         **config
     )
 
@@ -372,7 +406,7 @@ def run_with_timeout(func: Callable, timeout: float, *args, **kwargs):
         except Exception as e:
             error[0] = e
 
-    thread = threading.Thread(target=worker)
+    thread = threading.Thread(target=worker, daemon=True)
     thread.start()
     thread.join(timeout=timeout)
 

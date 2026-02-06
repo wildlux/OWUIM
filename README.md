@@ -560,6 +560,7 @@ Suggerimenti e miglioramenti sono benvenuti!
 
 ## 📚 Documentazione Aggiuntiva
 
+- [`document_service/CONFIGURAZIONE_SERVIZI.md`](document_service/CONFIGURAZIONE_SERVIZI.md) - Parametri completi di tutti i servizi (porte, endpoint, voci TTS, formati, limiti sistema)
 - [`docs/LAN_ACCESS.md`](docs/LAN_ACCESS.md) - Guida completa accesso LAN
 - `BACKUP_INFO.txt` - Generato automaticamente nei backup
 - Inline docstrings nei file Python
