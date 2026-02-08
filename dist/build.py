@@ -12,6 +12,7 @@ Uso:
     python build.py linux        # Solo Linux
     python build.py all          # Tutti
     python build.py zip          # Crea archivio progetto
+    python build.py bat          # Pacchetto .bat portatile
 """
 
 import subprocess
@@ -412,6 +413,162 @@ def create_zip():
     return False
 
 
+def build_bat_portable():
+    """Crea pacchetto .bat portatile per Windows."""
+    print(f"\n{BOLD}[7] Creazione pacchetto .bat portatile...{N}")
+
+    PROJECT_ROOT = SCRIPT_DIR.parent
+    PORTABLE_DIR = SCRIPT_DIR / "OpenWebUI-Manager-Portable"
+
+    # Pulisci eventuale build precedente
+    if PORTABLE_DIR.exists():
+        shutil.rmtree(PORTABLE_DIR)
+
+    PORTABLE_DIR.mkdir(exist_ok=True)
+
+    # File e cartelle da copiare dal progetto padre
+    items_to_copy = [
+        ("openwebui_gui.py", None),
+        ("openwebui_gui_lite.py", None),
+        ("docker-compose.yml", None),
+        ("requirements.txt", None),
+        ("config.py", None),
+        ("translations.py", None),
+        ("run_gui.bat", None),
+        ("run_gui_lite.bat", None),
+        ("ICONA", None),
+        ("Tools OWUI", None),
+        ("scripts", None),
+        ("image_analysis", None),
+        ("tts_service", None),
+        ("document_service", None),
+        ("mcp_service", None),
+    ]
+
+    copied = 0
+    for item_name, dest_name in items_to_copy:
+        src = PROJECT_ROOT / item_name
+        dst = PORTABLE_DIR / (dest_name or item_name)
+        if not src.exists():
+            print(f"  {Y}[!]{N} Non trovato: {item_name} (saltato)")
+            continue
+        try:
+            if src.is_dir():
+                shutil.copytree(src, dst, ignore=shutil.ignore_patterns(
+                    '__pycache__', '*.pyc', '*.pyo', 'venv', '.git'))
+            else:
+                shutil.copy2(src, dst)
+            copied += 1
+        except Exception as e:
+            print(f"  {R}[X]{N} Errore copia {item_name}: {e}")
+
+    print(f"  {G}[OK]{N} Copiati {copied} elementi")
+
+    # Genera il launcher .bat
+    bat_content = r'''@echo off
+chcp 65001 >nul 2>&1
+title Open WebUI Manager - Avvio
+color 1F
+
+echo.
+echo  ╔═══════════════════════════════════════════════════════╗
+echo  ║         Open WebUI Manager - Versione Portatile      ║
+echo  ╚═══════════════════════════════════════════════════════╝
+echo.
+
+:: Verifica Python
+where python >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo  [ERRORE] Python non trovato!
+    echo.
+    echo  Per usare Open WebUI Manager devi installare Python 3.8+
+    echo  Scaricalo da: https://www.python.org/downloads/
+    echo.
+    echo  IMPORTANTE: durante l'installazione seleziona
+    echo  "Add Python to PATH"
+    echo.
+    pause
+    exit /b 1
+)
+
+echo  [OK] Python trovato
+for /f "tokens=*" %%i in ('python --version 2^>^&1') do echo       %%i
+echo.
+
+:: Verifica/crea ambiente virtuale
+if not exist "%~dp0venv\Scripts\python.exe" (
+    echo  [*] Creazione ambiente virtuale...
+    echo      Questa operazione viene eseguita solo la prima volta.
+    echo.
+    python -m venv "%~dp0venv"
+    if %ERRORLEVEL% neq 0 (
+        echo  [ERRORE] Impossibile creare l'ambiente virtuale.
+        pause
+        exit /b 1
+    )
+    echo  [OK] Ambiente virtuale creato
+    echo.
+
+    echo  [*] Installazione dipendenze...
+    echo      Potrebbe richiedere qualche minuto.
+    echo.
+    "%~dp0venv\Scripts\pip.exe" install -r "%~dp0requirements.txt"
+    if %ERRORLEVEL% neq 0 (
+        echo  [ATTENZIONE] Alcune dipendenze potrebbero non essere installate.
+        echo  Il programma potrebbe comunque funzionare.
+        echo.
+    ) else (
+        echo  [OK] Dipendenze installate
+    )
+    echo.
+) else (
+    echo  [OK] Ambiente virtuale presente
+    echo.
+)
+
+:: Avvio GUI
+echo  [*] Avvio Open WebUI Manager...
+echo.
+"%~dp0venv\Scripts\python.exe" "%~dp0openwebui_gui.py"
+
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo  [ERRORE] Il programma si e' chiuso con un errore.
+    echo  Prova a eliminare la cartella "venv" e riavvia.
+    echo.
+    pause
+)
+'''
+
+    bat_path = PORTABLE_DIR / "Avvia_OpenWebUI_Manager.bat"
+    bat_path.write_text(bat_content, encoding='utf-8')
+    print(f"  {G}[OK]{N} Creato: Avvia_OpenWebUI_Manager.bat")
+
+    # Crea archivio ZIP
+    zip_name = f"OpenWebUI-Manager-Portable-{VERSION}"
+    zip_path = SCRIPT_DIR / f"{zip_name}.zip"
+
+    print(f"\n  Creazione archivio ZIP...")
+    shutil.make_archive(str(SCRIPT_DIR / zip_name), 'zip',
+                        root_dir=SCRIPT_DIR,
+                        base_dir="OpenWebUI-Manager-Portable")
+    print(f"  {G}[OK]{N} Creato: {zip_path}")
+    print(f"  Dimensione: {zip_path.stat().st_size / 1024 / 1024:.1f} MB")
+
+    print(f"\n  {G}Contenuto cartella portatile:{N}")
+    for item in sorted(PORTABLE_DIR.iterdir()):
+        tag = "DIR " if item.is_dir() else "FILE"
+        print(f"    [{tag}] {item.name}")
+
+    print(f"\n{G}==================================================================={N}")
+    print(f"  {G}[OK]{N} Build completato!")
+    print(f"  Cartella: {PORTABLE_DIR}")
+    print(f"  ZIP:      {zip_path.name}")
+    print(f"{G}==================================================================={N}\n")
+
+    return True
+
+
 def clean():
     """Pulisce file temporanei build."""
     print(f"\n{BOLD}Pulizia file temporanei...{N}")
@@ -444,6 +601,7 @@ def menu():
   [4] Tutti (Windows + Linux)
   [5] Crea ZIP progetto
   [6] Pulisci file temporanei
+  [7] Windows .bat (portatile)
   [0] Esci
 """)
 
@@ -472,6 +630,9 @@ def menu():
         create_zip()
     elif choice == "6":
         clean()
+    elif choice == "7":
+        build_bat_portable()
+        return
     elif choice == "0":
         return
 
@@ -493,7 +654,8 @@ def main():
         if cmd in ["windows", "linux", "all"]:
             check_venv()
 
-        check_dependencies()
+        if cmd not in ["bat", "zip", "clean"]:
+            check_dependencies()
 
         if cmd == "windows":
             build_windows()
@@ -506,10 +668,15 @@ def main():
             build_appimage()
         elif cmd == "zip":
             create_zip()
+        elif cmd == "bat":
+            build_bat_portable()
+            return
         elif cmd == "clean":
             clean()
+            return
         else:
-            print(f"Uso: {sys.argv[0]} [windows|linux|all|zip|clean]")
+            print(f"Uso: {sys.argv[0]} [windows|linux|all|zip|bat|clean]")
+            return
 
         clean()
     else:
