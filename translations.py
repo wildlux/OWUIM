@@ -187,6 +187,10 @@ TRANSLATIONS = {
         "info_title": "Open WebUI Manager",
         "about_program": "Cosa fa questo programma",
         "thanks": "Ringraziamenti",
+        "shortcuts_title": "Scorciatoie Tastiera",
+        "support_title": "Supporto",
+        "report_issue": "🐛 Segnala un Problema",
+        "copy_for_support": "📋 Copia per Supporto",
 
         # MCP
         "mcp_warning_title": "⚠️ Avviso Importante",
@@ -431,6 +435,10 @@ TRANSLATIONS = {
         "info_title": "Open WebUI Manager",
         "about_program": "What this program does",
         "thanks": "Acknowledgments",
+        "shortcuts_title": "Keyboard Shortcuts",
+        "support_title": "Support",
+        "report_issue": "🐛 Report a Problem",
+        "copy_for_support": "📋 Copy for Support",
 
         # MCP
         "mcp_warning_title": "⚠️ Important Warning",

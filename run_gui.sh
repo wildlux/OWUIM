@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-# Open WebUI Manager - GUI + Image Analysis
+# Open WebUI Manager - Launcher
 ###############################################################################
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,53 +25,14 @@ activate_venv() {
     fi
 }
 
-# Funzione per analizzare file
-analyze_file() {
-    local file="$1"
-    echo -e "${BLUE}[*] Analisi: $(basename "$file")${NC}"
-    python3 image_analysis/image_converter.py "$file" -f base64
-    echo ""
-}
+# Avvia venv
+activate_venv || exit 1
 
-# Funzione per analizzare cartella
-analyze_folder() {
-    local folder="$1"
-    echo -e "${BLUE}[*] Analisi cartella: $folder${NC}"
-    echo ""
-
-    for ext in png jpg jpeg svg webp gif; do
-        for file in "$folder"/*.$ext; do
-            if [ -f "$file" ]; then
-                analyze_file "$file"
-            fi
-        done
-    done
-
-    echo -e "${GREEN}[OK] Analisi completata!${NC}"
-}
-
-# Se passato un argomento, analizzalo
-if [ -n "$1" ]; then
-    echo ""
-    echo "======================================================================"
-    echo "  Analisi Immagini"
-    echo "======================================================================"
-    echo ""
-
-    activate_venv || exit 1
-
-    if [ -d "$1" ]; then
-        analyze_folder "$1"
-    elif [ -f "$1" ]; then
-        analyze_file "$1"
-    else
-        echo -e "${RED}[X] File/cartella non trovato: $1${NC}"
-        exit 1
-    fi
-
-    echo ""
-    read -p "Premi INVIO per uscire..."
-    exit 0
+# Verifica PyQt5
+if ! python3 -c "from PyQt5.QtWidgets import QApplication" 2>/dev/null; then
+    echo -e "${RED}[X] PyQt5 non trovato!${NC}"
+    echo "Installa con: pip install -r requirements.txt"
+    exit 1
 fi
 
 # Menu principale
@@ -82,30 +43,15 @@ show_menu() {
     echo -e "${GREEN}              OPEN WEBUI MANAGER${NC}"
     echo -e "${GREEN}  ======================================================================${NC}"
     echo ""
-    echo "   [1] Avvia GUI Manager (gestione completa)"
-    echo "   [2] Avvia Image Analysis Service (porta 5555)"
-    echo "   [3] Avvia TTS Service (porta 5556)"
-    echo "   [4] Converti immagine singola"
-    echo "   [5] Converti cartella immagini"
-    echo "   [6] Avvia tutto (GUI + Image + TTS)"
+    echo "   [1] Avvia GUI Manager"
+    echo "   [2] Avvia tutto (GUI + servizi in background)"
     echo "   [0] Esci"
     echo ""
     echo -e "${GREEN}  ======================================================================${NC}"
     echo ""
-    echo -e "  ${YELLOW}TIP: Passa un file/cartella come argomento per analizzarlo!${NC}"
-    echo -e "  ${YELLOW}     Esempio: ./run_gui.sh /path/to/images/${NC}"
+    echo -e "  ${YELLOW}I servizi (TTS, Immagini, Documenti) si gestiscono dal tab MCP.${NC}"
     echo ""
 }
-
-# Avvia venv
-activate_venv || exit 1
-
-# Verifica PyQt5
-if ! python3 -c "from PyQt5.QtWidgets import QApplication" 2>/dev/null; then
-    echo -e "${RED}[X] PyQt5 non trovato!${NC}"
-    echo "Installa con: pip install -r requirements.txt"
-    exit 1
-fi
 
 # Loop menu
 while true; do
@@ -119,40 +65,6 @@ while true; do
             python3 openwebui_gui.py
             ;;
         2)
-            echo ""
-            echo -e "${BLUE}[*] Avvio Image Analysis Service...${NC}"
-            echo "[*] Porta: 5555"
-            echo "[*] Premi Ctrl+C per fermare"
-            echo ""
-            python3 image_analysis/image_service.py
-            read -p "Premi INVIO per continuare..."
-            ;;
-        3)
-            echo ""
-            echo -e "${BLUE}[*] Avvio TTS Service...${NC}"
-            echo "[*] Porta: 5556"
-            echo "[*] Premi Ctrl+C per fermare"
-            echo ""
-            python3 tts_service/tts_local.py
-            read -p "Premi INVIO per continuare..."
-            ;;
-        4)
-            echo ""
-            read -p "Percorso immagine: " filepath
-            if [ -n "$filepath" ]; then
-                analyze_file "$filepath"
-                read -p "Premi INVIO per continuare..."
-            fi
-            ;;
-        5)
-            echo ""
-            read -p "Percorso cartella: " folder
-            if [ -n "$folder" ]; then
-                analyze_folder "$folder"
-                read -p "Premi INVIO per continuare..."
-            fi
-            ;;
-        6)
             echo ""
             echo -e "${BLUE}[*] Avvio Image Analysis Service in background...${NC}"
             python3 image_analysis/image_service.py &
