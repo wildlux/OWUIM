@@ -75,6 +75,20 @@ TRANSLATIONS = {
         "confirm_remove": "Conferma",
         "confirm_remove_msg": "Vuoi davvero rimuovere il modello '{model}'?",
         "download_tooltip": "Clicca per scaricare {model}",
+        "refresh_models": "🔄 Aggiorna Lista",
+        "copy_name": "Copia nome",
+        "remove_model": "Rimuovi modello",
+        "confirm_remove_title": "Conferma Rimozione",
+        "confirm_remove_detail": "Vuoi rimuovere il modello '{model}'?",
+        "remove_action": "Rimuovi",
+        "confirm_remove_full_title": "Conferma Rimozione Modello",
+        "confirm_remove_full_detail": "Il modello verra' eliminato dal disco.\nPotrai riscaricarlo in qualsiasi momento dal tab Modelli.",
+        "model_size": "Dimensione: {size}",
+        "removing_model": "Rimozione {model}...",
+        "enter_model_name": "Inserisci il nome di un modello",
+        "downloading_model": "Download {model}...",
+        "models_note": "<i>💡 Clicca sul nome del modello per scaricarlo · Legenda: 📅Quotidiano 💻Coding 👁️Vision 🔢Math 💌Sentiment ✍️Scrittura 🌍Traduzioni</i>",
+        "models_links": "<i>🌐 Per modelli più aggiornati: <a href='https://ollama.com/library'>ollama.com</a> · <a href='https://huggingface.co/models'>huggingface.co</a> · <a href='https://kaggle.com/models'>kaggle.com</a></i>",
 
         # CONFIGURATION
         "config_title": "Configurazione",
@@ -104,6 +118,22 @@ TRANSLATIONS = {
         "lan_enabled_title": "✅ Accesso LAN Abilitato",
         "https_script_error": "Script HTTPS non trovato",
         "italian_guide_title": "Guida Configurazione Italiano",
+        "lan_instructions": (
+            "<div style='background-color: #e8f4fc; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>📱 Come collegarsi dal cellulare:</b><br><br>"
+            "<b>1.</b> Connetti il cellulare alla <b>stessa rete WiFi</b> del PC<br><br>"
+            "<b>2.</b> Clicca il pulsante verde <b>\"🌐 Abilita LAN\"</b><br><br>"
+            "<b>3.</b> Scansiona il <b>QR code</b> oppure digita l'indirizzo mostrato<br><br>"
+            "<hr style='border: 1px solid #bdd7ea;'>"
+            "<small>💡 Per tornare alla modalità sicura, clicca <b>\"🔒 Solo Localhost\"</b></small>"
+            "</div>"
+        ),
+        "refresh_ip_btn": "🔄 Aggiorna IP",
+        "backup_usb_button": "💾 Backup in USB",
+        "https_info_text": "Necessario per usare il microfono da dispositivi mobili.",
+        "scan_qr_title": "📱 Scansiona il QR Code dal cellulare",
+        "log_copied": "Log copiato negli appunti!",
+        "copy_logs_label": "📋 Copia per Supporto",
 
         # TTS WIDGET
         "tts_status": "Stato Servizio",
@@ -133,6 +163,15 @@ TRANSLATIONS = {
         "voice_ok": "✓ OK",
         "tts_config_title": "Come configurare Open WebUI",
         "tts_config_go_to": "<b>Vai a:</b> Open WebUI → Impostazioni → Audio → Sintesi Vocale (TTS)",
+        "tts_param_engine": "Motore",
+        "tts_param_url": "URL API",
+        "tts_param_key": "Chiave",
+        "tts_param_voice": "Voce",
+        "tts_docker_title": "<b style='color: #e67e22;'>Per Docker:</b>",
+        "voice_label": "Voce:",
+        "voice_downloading": "Download voce {voice} in corso...\nQuesto potrebbe richiedere qualche minuto.",
+        "voice_installed_msg": "Voce {voice} installata con successo!",
+        "tts_error_stop": "Errore stop: {error}",
         "tts_engine": "Engine",
         "tts_api_url": "API URL",
         "tts_api_key": "Chiave",
@@ -182,6 +221,49 @@ TRANSLATIONS = {
         "no_volume_found": "Nessun volume trovato per questa cartella.",
         "file_too_large": "File troppo grande",
         "file_too_large_msg": "Il file e' troppo grande (>10 MB).\nSeleziona un file piu' piccolo.",
+        "export_text_button": "📄 Esporta Testo",
+        "linked_folders": "Cartelle collegate a Open WebUI:",
+        "unlink_button": "🗑️ Scollega",
+        "restore_button": "♻️ Ripristina",
+        "refresh_volumes_tooltip": "Aggiorna lista volumi",
+        "no_linked_folder": "Nessuna cartella collegata",
+        "unlink_tooltip": "Scollega la cartella selezionata da Open WebUI",
+        "restore_tooltip": "Ricollega una cartella scollegata in precedenza",
+        "select_info": "Seleziona prima un file dalla lista",
+        "export_first": "Esporta prima un file per copiare il risultato",
+        "result_placeholder_archive": "Seleziona un file e clicca Esporta Testo...",
+        "confirm_unlink_title": "Conferma Scollegamento",
+        "confirm_unlink_msg": "Scollegare la cartella da Open WebUI?\n\n  {name}\n  ({path})\n\nI file NON vengono cancellati dal disco.\nPotrai ripristinarla in qualsiasi momento.",
+        "folder_unlinked_title": "Cartella Scollegata",
+        "folder_unlinked_msg": "'{name}' scollegata da Open WebUI.\n\nRiavvia Docker per applicare.\nUsa 'Ripristina' per ricollegarla.",
+        "no_restore_title": "Nessun Ripristino Disponibile",
+        "no_restore_msg": "Non ci sono cartelle scollegate da ripristinare.\n\nUsa ⭐ per collegare una nuova cartella.",
+        "restore_folder_title": "Ripristina Cartella",
+        "restore_folder_prompt": "Seleziona la cartella da ricollegare a Open WebUI:",
+        "folder_not_found_title": "Cartella Non Trovata",
+        "folder_not_found_msg": "La cartella non esiste piu':\n{path}\n\nRimuoverla dalla cronologia?",
+        "folder_restored_title": "Cartella Ripristinata",
+        "folder_restored_msg": "'{name}' ricollegata a Open WebUI.\n\nRiavvia Docker per applicare le modifiche.",
+        "folder_already_linked": "La cartella risulta gia' collegata.",
+        "archive_purpose": (
+            "<div style='background-color: #e8f6e8; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>🎯 A cosa serve?</b><br><br>"
+            "Open WebUI ha dei <b>bug</b> quando importi file dal browser.<br><br>"
+            "Questa funzione crea un <b>\"cloud privato\"</b> sul tuo PC:<br><br>"
+            "✅ I tuoi file <b>restano sul computer</b><br>"
+            "✅ Niente upload su internet<br>"
+            "✅ Open WebUI li vede senza errori<br>"
+            "✅ Bypassa i problemi di importazione</div>"
+        ),
+        "archive_chat_note": (
+            "<div style='background-color: #e3f2fd; padding: 10px; border-radius: 6px;'>"
+            "<b>💬 Per usare i file in chat:</b><br>"
+            "<code style='background: #fff; padding: 2px 5px;'>@nome_knowledge descrivi questo</code></div>"
+        ),
+        "archive_steps_title": "<b style='font-size: 13px;'>📋 3 Passi Semplicissimi</b>",
+        "path_copied": "📎 Percorso copiato:\n{path}",
+        "copied_to_clipboard": "✓ Copiato negli appunti!",
+        "folder_added_archive": "⭐ Cartella aggiunta come archivio documenti: {path}",
 
         # INFO
         "info_title": "Open WebUI Manager",
@@ -230,6 +312,44 @@ TRANSLATIONS = {
         "mcp_enable": "Abilita MCP",
         "mcp_not_now": "Non ora",
         "mcp_bridge_started": "MCP Bridge avviato sulla porta 5558",
+        "mcp_warning_text": "⚠️ <b style='color: #856404;'>MCP richiede risorse.</b> <span style='color: #856404; font-size: 10px;'>Verifica RAM/VRAM prima di avviare.</span>",
+        "mcp_not_active": "MCP non attivo",
+        "mcp_already_active": "{service} gia' attivo",
+        "mcp_starting_service": "Avvio {service} in corso...",
+        "mcp_service_started": "{service} avviato",
+        "mcp_service_not_responding": "{service} non risponde - riprova",
+        "mcp_service_stopped": "{service} fermato",
+        "mcp_error_stopping": "Errore fermando {service}: {error}",
+        "mcp_all_active": "Tutti i servizi sono gia' attivi",
+        "mcp_starting_n": "Avvio di {count} servizi...",
+        "mcp_no_tools": "Nessun tool disponibile",
+        "mcp_test_running": "⏳ Test TTS in corso...",
+        "mcp_test_checking": "⏳ Verifica servizi in corso...",
+        "mcp_service_unreachable": "❌ Servizio MCP non raggiungibile.\n\nCosa fare:\n1. Vai alla sezione 'MCP Bridge Service' qui sopra\n2. Clicca 'Avvia Servizio'\n3. Attendi che lo stato diventi verde\n4. Riprova il test",
+        "mcp_start_svc_btn": "Avvia",
+        "mcp_stop_svc_btn": "Ferma",
+        "mcp_checking_btn": "Verifica...",
+        "mcp_starting_btn": "Avvio...",
+        "mcp_start_all_tooltip": "Avvia TTS, Image e Document in un colpo solo",
+        "mcp_readme_not_found": "README non trovato",
+        "mcp_risk_level": "Livello di Rischio: {level}",
+        "mcp_system_eval": "Valutazione Sistema:",
+        "mcp_what_happens": "Cosa succede avviando il servizio:",
+        "mcp_recommendations": "Raccomandazioni:",
+        "mcp_tools_placeholder": "Avvia il servizio per vedere i tools...",
+        "mcp_test_text_label": "Testo:",
+        "mcp_test_input_default": "Ciao, questo è un test!",
+        "mcp_test_input_placeholder": "Inserisci testo per il test TTS...",
+        "mcp_test_results_placeholder": "I risultati dei test appariranno qui...",
+        "copied_clipboard": "Copiato negli appunti:\n{text}",
+        "mcp_file_not_found": "File non trovato: {file}",
+        "mcp_port_suggestion": "Suggerimenti:\n- Verifica che la porta {port} sia libera\n- Controlla i log per maggiori dettagli",
+        "mcp_start_suggestion": "Suggerimenti:\n- Verifica che Python sia installato\n- Controlla che la porta {port} sia libera\n- Prova ad avviare manualmente: python3 mcp_service/mcp_service.py",
+        "mcp_stop_manual": "Prova manualmente: pkill -f mcp_service.py",
+        "mcp_services_status": "📊 Stato Servizi:\n",
+        "mcp_test_tts_ok": "✅ TTS OK!\nVoce: {voice}\nAudio: {size} bytes\nFile: {path}",
+        "mcp_no_gpu": "Non rilevata (no GPU NVIDIA o driver)",
+        "mcp_ram_error": "Errore: {error}",
 
         # BOTTOM BAR
         "font_label": "Font:",
@@ -250,6 +370,148 @@ TRANSLATIONS = {
         "starting_msg": "Avvio servizi...",
         "stopping_msg": "Arresto servizi...",
         "restarting_msg": "Riavvio servizi...",
+        "cancel": "Annulla",
+        "close": "Chiudi",
+        "retry": "Riprova",
+        "view_log": "Vedi Log",
+
+        # DASHBOARD TOOLTIPS
+        "start_tooltip": "Avvia Docker e Open WebUI (Ctrl+1)",
+        "stop_tooltip": "Ferma tutti i container Docker (Ctrl+S)",
+        "restart_tooltip": "Riavvia i servizi Docker",
+        "open_browser_tooltip": "Apri Open WebUI nel browser (Ctrl+B)",
+        "last_check": "Ultimo controllo:",
+        "tts_timeout_label": "Timeout TTS: {tts}s | LLM: {llm}s",
+        "gpu_not_detected_label": "GPU: Non rilevata (solo CPU)",
+
+        # FIRST RUN DIALOG
+        "first_run_title": "Benvenuto in Open WebUI Manager!",
+        "first_run_welcome": "Benvenuto!",
+        "first_run_intro": "Per iniziare, segui questi 3 passi:",
+        "first_run_step1": "Modelli",
+        "first_run_step1_desc": "Scarica almeno un modello AI (consigliato: qwen2.5:7b)",
+        "first_run_step2": "Voce",
+        "first_run_step2_desc": "Configura la sintesi vocale italiana (opzionale)",
+        "first_run_step3": "Browser",
+        "first_run_step3_desc": "Apri Open WebUI e inizia a chattare!",
+        "first_run_ok_hint": "Premi OK per andare al tab Modelli.",
+        "dont_show_again": "Non mostrare piu'",
+
+        # GLOBAL HELP (F1)
+        "help_title": "Guida Rapida",
+        "help_shortcuts": "Scorciatoie Tastiera",
+        "help_nav_tabs": "Naviga tra i tab",
+        "help_refresh": "Aggiorna stato servizi",
+        "help_open_browser": "Apri browser Open WebUI",
+        "help_dark_mode": "Dark/Light mode",
+        "help_quit": "Esci",
+        "help_this_guide": "Questa guida",
+        "help_first_start": "Primo Avvio",
+        "help_step1": "Scarica un modello dal tab <b>Modelli</b>",
+        "help_step2": "Avvia i servizi dalla <b>Dashboard</b>",
+        "help_step3": "Apri il browser per usare Open WebUI",
+        "help_useful_links": "Link Utili",
+
+        # TAB HELP
+        "tab_help_dashboard": "Panoramica dello stato dei servizi.\n\nDa qui puoi avviare, fermare o riavviare Docker e Open WebUI,\ne monitorare le risorse del sistema.",
+        "tab_help_models": "Gestisci i modelli AI di Ollama.\n\nScarica nuovi modelli dalla tabella consigliati\no inserisci manualmente il nome.\nClicca sul nome del modello per scaricarlo.",
+        "tab_help_voice": "Sintesi vocale italiana offline con Piper TTS.\n\nConfigura e testa le voci italiane.\nScarica le voci se non ancora installate.",
+        "tab_help_archive": "Gestisci file locali da usare come archivio documenti.\n\nTrascina o aggiungi file che verranno indicizzati\nda Open WebUI per le risposte.",
+        "tab_help_mcp": "Model Context Protocol Bridge.\n\nEspone i servizi locali (TTS, Image, Document)\ntramite protocollo MCP per integrazioni esterne.",
+        "tab_help_config": "Impostazioni avanzate.\n\nAccesso LAN, HTTPS, lingua italiana,\nmanutenzione e backup.",
+        "tab_help_logs": "Log dei container Docker in tempo reale.\n\nUtile per diagnosticare problemi.\nUsa 'Segui Log' per lo streaming continuo.",
+        "tab_help_info": "Informazioni sul progetto,\nversione e crediti.",
+        "tab_help_none": "Nessun aiuto disponibile.",
+        "help_guide_prefix": "Guida",
+
+        # CLOSE DIALOG
+        "close_title": "Chiudi Open WebUI Manager",
+        "close_services_active": "Ci sono servizi ancora attivi.\nCosa vuoi fare?",
+        "close_manager": "Chiudi Manager",
+        "stop_and_close": "Ferma tutto e chiudi",
+
+        # TRAY
+        "tray_show": "Mostra",
+        "tray_start": "Avvia Servizi",
+        "tray_stop": "Ferma Servizi",
+        "tray_browser": "Apri Browser",
+        "tray_quit": "Esci",
+        "tray_still_running": "L'applicazione e' ancora in esecuzione nel system tray",
+        "op_completed": "Operazione completata",
+        "op_error": "Errore operazione",
+        "op_success": "Successo",
+
+        # ERROR DIALOG
+        "error_dialog_title": "Operazione non riuscita",
+        "error_dialog_msg": "L'operazione e' terminata con codice errore {code}.\n\nSuggerimenti:",
+        "error_docker_check": "Verifica che Docker sia in esecuzione",
+        "error_docker_restart": "Prova a riavviare Docker Desktop",
+        "error_disk_space": "Controlla lo spazio disco disponibile",
+        "error_ollama_check": "Verifica che Ollama sia in esecuzione",
+        "error_internet": "Controlla la connessione internet",
+        "error_model_name": "Il nome del modello potrebbe essere errato",
+        "error_already_removed": "Il modello potrebbe essere gia' stato rimosso",
+        "error_check_logs": "Controlla i log per maggiori dettagli",
+        "error_check_services": "Verifica che tutti i servizi siano attivi",
+        "cancelled": "Annullato",
+        "completed_success": "Completato con successo",
+        "op_cancelled_user": "Operazione annullata dall'utente",
+
+        # STARTUP THREAD
+        "startup_checking_docker": "Verifica Docker...",
+        "startup_starting_docker": "Avvio Docker Desktop...",
+        "startup_docker_unavailable": "Docker Desktop non disponibile.\nAvvialo manualmente e riprova.",
+        "startup_docker_unavailable_linux": "Docker non disponibile.\nInstalla Docker e riprova.",
+        "startup_docker_ok": "Docker OK",
+        "startup_checking_ollama": "Verifica Ollama...",
+        "startup_starting_ollama": "Avvio Ollama...",
+        "startup_ollama_unavailable": "Ollama non disponibile.\nInstalla Ollama e riprova.",
+        "startup_ollama_ok": "Ollama OK",
+        "startup_starting_webui": "Avvio Open WebUI...",
+        "startup_downloading_image": "Download immagine...",
+        "startup_containers_failed": "Impossibile avviare i container.\n\nVerifica che Docker sia in esecuzione.",
+        "startup_container_started": "Container avviato",
+        "startup_waiting_service": "Attesa servizio...",
+        "startup_ready": "Pronto!",
+        "startup_all_started": "Tutti i servizi avviati!",
+        "startup_waiting_docker": "Attesa Docker Desktop... ({i}/40)",
+        "startup_waiting_ollama_msg": "Attesa Ollama... ({i}/20)",
+        "startup_waiting_service_msg": "Attesa servizio... ({i}/30)",
+
+        # INFO WIDGET CONTENT
+        "info_desc_html": (
+            "Questo programma gestisce un sistema di intelligenza artificiale locale "
+            "basato su <b>Open WebUI</b> e <b>Ollama</b>.<br><br>"
+            "Permette di:<br>"
+            "• Avviare e fermare i servizi AI con un click<br>"
+            "• Scaricare e gestire modelli di linguaggio (LLM)<br>"
+            "• Convertire immagini per la compatibilita' con la chat<br>"
+            "• Usare la sintesi vocale italiana offline<br>"
+            "• Accedere all'interfaccia web da cellulare e tablet<br><br>"
+            "Tutto funziona <b>localmente</b> sul tuo computer, senza inviare dati a server esterni."
+        ),
+        "info_thanks_html": (
+            "<div style='text-align: center;'>"
+            "<p style='font-size: 12px; color: #2c3e50;'>"
+            "Grazie a questo software <b>open source</b>, scaricabile su "
+            "<a href='https://github.com/wildlux/OWUIM' style='color: #333;'>GitHub</a>, "
+            "puoi sfruttare il tuo computer per lavorare <b>offline</b> "
+            "e mantenere un profilo professionale senza dipendere da internet.<br>"
+            "Tutti i dati restano sul tuo dispositivo: <b>privacy totale</b>, nessuna informazione condivisa con terzi.<br>"
+            "Sviluppato da <b>Paolo Lo Bello</b> | Versione <b>1.1.0</b> | Licenza Open Source<br>"
+            "<a href='https://wildlux.pythonanywhere.com/' style='color: #27ae60;'>Sito</a> · "
+            "<a href='https://paololobello.altervista.org/' style='color: #e74c3c;'>Blog</a> · "
+            "<a href='https://www.linkedin.com/in/paololobello/' style='color: #0077b5;'>LinkedIn</a>"
+            "</p>"
+            "</div>"
+        ),
+        "info_shortcuts_html": (
+            "<table style='font-size: 11px;'>"
+            "<tr><td><b>Ctrl+1..8</b></td><td style='padding-left:12px;'>Passa al tab corrispondente</td></tr>"
+            "<tr><td><b>Ctrl+R</b></td><td style='padding-left:12px;'>Aggiorna stato servizi</td></tr>"
+            "<tr><td><b>Ctrl+B</b></td><td style='padding-left:12px;'>Apri Open WebUI nel browser</td></tr>"
+            "</table>"
+        ),
     },
 
     "en": {
@@ -323,6 +585,20 @@ TRANSLATIONS = {
         "confirm_remove": "Confirm",
         "confirm_remove_msg": "Do you really want to remove the model '{model}'?",
         "download_tooltip": "Click to download {model}",
+        "refresh_models": "🔄 Refresh List",
+        "copy_name": "Copy name",
+        "remove_model": "Remove model",
+        "confirm_remove_title": "Confirm Removal",
+        "confirm_remove_detail": "Do you want to remove the model '{model}'?",
+        "remove_action": "Remove",
+        "confirm_remove_full_title": "Confirm Model Removal",
+        "confirm_remove_full_detail": "The model will be deleted from disk.\nYou can re-download it anytime from the Models tab.",
+        "model_size": "Size: {size}",
+        "removing_model": "Removing {model}...",
+        "enter_model_name": "Enter a model name",
+        "downloading_model": "Downloading {model}...",
+        "models_note": "<i>💡 Click model name to download · Legend: 📅Daily 💻Coding 👁️Vision 🔢Math 💌Sentiment ✍️Writing 🌍Translation</i>",
+        "models_links": "<i>🌐 For more models: <a href='https://ollama.com/library'>ollama.com</a> · <a href='https://huggingface.co/models'>huggingface.co</a> · <a href='https://kaggle.com/models'>kaggle.com</a></i>",
 
         # CONFIGURATION
         "config_title": "Configuration",
@@ -352,6 +628,22 @@ TRANSLATIONS = {
         "lan_enabled_title": "✅ LAN Access Enabled",
         "https_script_error": "HTTPS script not found",
         "italian_guide_title": "Italian Configuration Guide",
+        "lan_instructions": (
+            "<div style='background-color: #e8f4fc; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>📱 How to connect from mobile:</b><br><br>"
+            "<b>1.</b> Connect your phone to the <b>same WiFi network</b> as the PC<br><br>"
+            "<b>2.</b> Click the green button <b>\"🌐 Enable LAN\"</b><br><br>"
+            "<b>3.</b> Scan the <b>QR code</b> or type the displayed address<br><br>"
+            "<hr style='border: 1px solid #bdd7ea;'>"
+            "<small>💡 To return to safe mode, click <b>\"🔒 Localhost Only\"</b></small>"
+            "</div>"
+        ),
+        "refresh_ip_btn": "🔄 Refresh IP",
+        "backup_usb_button": "💾 USB Backup",
+        "https_info_text": "Required to use microphone on mobile devices.",
+        "scan_qr_title": "📱 Scan QR Code from your phone",
+        "log_copied": "Log copied to clipboard!",
+        "copy_logs_label": "📋 Copy for Support",
 
         # TTS WIDGET
         "tts_status": "Service Status",
@@ -381,6 +673,15 @@ TRANSLATIONS = {
         "voice_ok": "✓ OK",
         "tts_config_title": "How to configure Open WebUI",
         "tts_config_go_to": "<b>Go to:</b> Open WebUI → Settings → Audio → Speech Synthesis (TTS)",
+        "tts_param_engine": "Engine",
+        "tts_param_url": "API URL",
+        "tts_param_key": "Key",
+        "tts_param_voice": "Voice",
+        "tts_docker_title": "<b style='color: #e67e22;'>For Docker:</b>",
+        "voice_label": "Voice:",
+        "voice_downloading": "Downloading voice {voice}...\nThis may take a few minutes.",
+        "voice_installed_msg": "Voice {voice} installed successfully!",
+        "tts_error_stop": "Stop error: {error}",
         "tts_engine": "Engine",
         "tts_api_url": "API URL",
         "tts_api_key": "Key",
@@ -430,6 +731,49 @@ TRANSLATIONS = {
         "no_volume_found": "No volume found for this folder.",
         "file_too_large": "File too large",
         "file_too_large_msg": "File is too large (>10 MB).\nSelect a smaller file.",
+        "export_text_button": "📄 Export Text",
+        "linked_folders": "Folders linked to Open WebUI:",
+        "unlink_button": "🗑️ Unlink",
+        "restore_button": "♻️ Restore",
+        "refresh_volumes_tooltip": "Refresh volumes list",
+        "no_linked_folder": "No linked folders",
+        "unlink_tooltip": "Unlink the selected folder from Open WebUI",
+        "restore_tooltip": "Re-link a previously unlinked folder",
+        "select_info": "Select a file from the list first",
+        "export_first": "Export a file first to copy the result",
+        "result_placeholder_archive": "Select a file and click Export Text...",
+        "confirm_unlink_title": "Confirm Unlink",
+        "confirm_unlink_msg": "Unlink folder from Open WebUI?\n\n  {name}\n  ({path})\n\nFiles will NOT be deleted from disk.\nYou can restore it anytime.",
+        "folder_unlinked_title": "Folder Unlinked",
+        "folder_unlinked_msg": "'{name}' unlinked from Open WebUI.\n\nRestart Docker to apply.\nUse 'Restore' to re-link.",
+        "no_restore_title": "No Restore Available",
+        "no_restore_msg": "No unlinked folders to restore.\n\nUse ⭐ to link a new folder.",
+        "restore_folder_title": "Restore Folder",
+        "restore_folder_prompt": "Select folder to re-link to Open WebUI:",
+        "folder_not_found_title": "Folder Not Found",
+        "folder_not_found_msg": "Folder no longer exists:\n{path}\n\nRemove from history?",
+        "folder_restored_title": "Folder Restored",
+        "folder_restored_msg": "'{name}' re-linked to Open WebUI.\n\nRestart Docker to apply changes.",
+        "folder_already_linked": "Folder is already linked.",
+        "archive_purpose": (
+            "<div style='background-color: #e8f6e8; padding: 12px; border-radius: 6px;'>"
+            "<b style='font-size: 12px;'>🎯 What is this for?</b><br><br>"
+            "Open WebUI has <b>bugs</b> when importing files from the browser.<br><br>"
+            "This feature creates a <b>\"private cloud\"</b> on your PC:<br><br>"
+            "✅ Your files <b>stay on your computer</b><br>"
+            "✅ No upload to internet<br>"
+            "✅ Open WebUI sees them without errors<br>"
+            "✅ Bypasses import issues</div>"
+        ),
+        "archive_chat_note": (
+            "<div style='background-color: #e3f2fd; padding: 10px; border-radius: 6px;'>"
+            "<b>💬 To use files in chat:</b><br>"
+            "<code style='background: #fff; padding: 2px 5px;'>@knowledge_name describe this</code></div>"
+        ),
+        "archive_steps_title": "<b style='font-size: 13px;'>📋 3 Simple Steps</b>",
+        "path_copied": "📎 Path copied:\n{path}",
+        "copied_to_clipboard": "✓ Copied to clipboard!",
+        "folder_added_archive": "⭐ Folder added as document archive: {path}",
 
         # INFO
         "info_title": "Open WebUI Manager",
@@ -478,6 +822,44 @@ TRANSLATIONS = {
         "mcp_enable": "Enable MCP",
         "mcp_not_now": "Not now",
         "mcp_bridge_started": "MCP Bridge started on port 5558",
+        "mcp_warning_text": "⚠️ <b style='color: #856404;'>MCP requires resources.</b> <span style='color: #856404; font-size: 10px;'>Check RAM/VRAM before starting.</span>",
+        "mcp_not_active": "MCP not active",
+        "mcp_already_active": "{service} already active",
+        "mcp_starting_service": "Starting {service}...",
+        "mcp_service_started": "{service} started",
+        "mcp_service_not_responding": "{service} not responding - retry",
+        "mcp_service_stopped": "{service} stopped",
+        "mcp_error_stopping": "Error stopping {service}: {error}",
+        "mcp_all_active": "All services are already active",
+        "mcp_starting_n": "Starting {count} services...",
+        "mcp_no_tools": "No tools available",
+        "mcp_test_running": "⏳ TTS test in progress...",
+        "mcp_test_checking": "⏳ Checking services...",
+        "mcp_service_unreachable": "❌ MCP service unreachable.\n\nWhat to do:\n1. Go to 'MCP Bridge Service' section above\n2. Click 'Start Service'\n3. Wait for green status\n4. Retry the test",
+        "mcp_start_svc_btn": "Start",
+        "mcp_stop_svc_btn": "Stop",
+        "mcp_checking_btn": "Checking...",
+        "mcp_starting_btn": "Starting...",
+        "mcp_start_all_tooltip": "Start TTS, Image and Document all at once",
+        "mcp_readme_not_found": "README not found",
+        "mcp_risk_level": "Risk Level: {level}",
+        "mcp_system_eval": "System Evaluation:",
+        "mcp_what_happens": "What happens when starting the service:",
+        "mcp_recommendations": "Recommendations:",
+        "mcp_tools_placeholder": "Start the service to see available tools...",
+        "mcp_test_text_label": "Text:",
+        "mcp_test_input_default": "Hello, this is a test!",
+        "mcp_test_input_placeholder": "Enter text for TTS test...",
+        "mcp_test_results_placeholder": "Test results will appear here...",
+        "copied_clipboard": "Copied to clipboard:\n{text}",
+        "mcp_file_not_found": "File not found: {file}",
+        "mcp_port_suggestion": "Suggestions:\n- Check that port {port} is free\n- Check the logs for more details",
+        "mcp_start_suggestion": "Suggestions:\n- Verify that Python is installed\n- Check that port {port} is free\n- Try starting manually: python3 mcp_service/mcp_service.py",
+        "mcp_stop_manual": "Try manually: pkill -f mcp_service.py",
+        "mcp_services_status": "📊 Services Status:\n",
+        "mcp_test_tts_ok": "✅ TTS OK!\nVoice: {voice}\nAudio: {size} bytes\nFile: {path}",
+        "mcp_no_gpu": "Not detected (no NVIDIA GPU or drivers)",
+        "mcp_ram_error": "Error: {error}",
 
         # BOTTOM BAR
         "font_label": "Font:",
@@ -498,6 +880,148 @@ TRANSLATIONS = {
         "starting_msg": "Starting services...",
         "stopping_msg": "Stopping services...",
         "restarting_msg": "Restarting services...",
+        "cancel": "Cancel",
+        "close": "Close",
+        "retry": "Retry",
+        "view_log": "View Log",
+
+        # DASHBOARD TOOLTIPS
+        "start_tooltip": "Start Docker and Open WebUI (Ctrl+1)",
+        "stop_tooltip": "Stop all Docker containers (Ctrl+S)",
+        "restart_tooltip": "Restart Docker services",
+        "open_browser_tooltip": "Open Open WebUI in browser (Ctrl+B)",
+        "last_check": "Last check:",
+        "tts_timeout_label": "Timeout TTS: {tts}s | LLM: {llm}s",
+        "gpu_not_detected_label": "GPU: Not detected (CPU only)",
+
+        # FIRST RUN DIALOG
+        "first_run_title": "Welcome to Open WebUI Manager!",
+        "first_run_welcome": "Welcome!",
+        "first_run_intro": "To get started, follow these 3 steps:",
+        "first_run_step1": "Models",
+        "first_run_step1_desc": "Download at least one AI model (recommended: qwen2.5:7b)",
+        "first_run_step2": "Voice",
+        "first_run_step2_desc": "Configure Italian speech synthesis (optional)",
+        "first_run_step3": "Browser",
+        "first_run_step3_desc": "Open Open WebUI and start chatting!",
+        "first_run_ok_hint": "Press OK to go to the Models tab.",
+        "dont_show_again": "Don't show again",
+
+        # GLOBAL HELP (F1)
+        "help_title": "Quick Guide",
+        "help_shortcuts": "Keyboard Shortcuts",
+        "help_nav_tabs": "Navigate between tabs",
+        "help_refresh": "Refresh service status",
+        "help_open_browser": "Open Open WebUI browser",
+        "help_dark_mode": "Dark/Light mode",
+        "help_quit": "Quit",
+        "help_this_guide": "This guide",
+        "help_first_start": "First Start",
+        "help_step1": "Download a model from the <b>Models</b> tab",
+        "help_step2": "Start services from the <b>Dashboard</b>",
+        "help_step3": "Open the browser to use Open WebUI",
+        "help_useful_links": "Useful Links",
+
+        # TAB HELP
+        "tab_help_dashboard": "Service status overview.\n\nFrom here you can start, stop or restart Docker and Open WebUI,\nand monitor system resources.",
+        "tab_help_models": "Manage Ollama AI models.\n\nDownload new models from the recommended table\nor manually enter the name.\nClick on the model name to download it.",
+        "tab_help_voice": "Italian offline speech synthesis with Piper TTS.\n\nConfigure and test Italian voices.\nDownload voices if not yet installed.",
+        "tab_help_archive": "Manage local files as document archive.\n\nDrag or add files that will be indexed\nby Open WebUI for responses.",
+        "tab_help_mcp": "Model Context Protocol Bridge.\n\nExposes local services (TTS, Image, Document)\nvia MCP protocol for external integrations.",
+        "tab_help_config": "Advanced settings.\n\nLAN access, HTTPS, Italian language,\nmaintenance and backup.",
+        "tab_help_logs": "Real-time Docker container logs.\n\nUseful for diagnosing problems.\nUse 'Follow Logs' for continuous streaming.",
+        "tab_help_info": "Project information,\nversion and credits.",
+        "tab_help_none": "No help available.",
+        "help_guide_prefix": "Guide",
+
+        # CLOSE DIALOG
+        "close_title": "Close Open WebUI Manager",
+        "close_services_active": "There are still active services.\nWhat would you like to do?",
+        "close_manager": "Close Manager",
+        "stop_and_close": "Stop all and close",
+
+        # TRAY
+        "tray_show": "Show",
+        "tray_start": "Start Services",
+        "tray_stop": "Stop Services",
+        "tray_browser": "Open Browser",
+        "tray_quit": "Quit",
+        "tray_still_running": "The application is still running in the system tray",
+        "op_completed": "Operation completed",
+        "op_error": "Operation error",
+        "op_success": "Success",
+
+        # ERROR DIALOG
+        "error_dialog_title": "Operation failed",
+        "error_dialog_msg": "The operation finished with error code {code}.\n\nSuggestions:",
+        "error_docker_check": "Verify that Docker is running",
+        "error_docker_restart": "Try restarting Docker Desktop",
+        "error_disk_space": "Check available disk space",
+        "error_ollama_check": "Verify that Ollama is running",
+        "error_internet": "Check your internet connection",
+        "error_model_name": "The model name might be incorrect",
+        "error_already_removed": "The model might already have been removed",
+        "error_check_logs": "Check the logs for more details",
+        "error_check_services": "Verify that all services are active",
+        "cancelled": "Cancelled",
+        "completed_success": "Completed successfully",
+        "op_cancelled_user": "Operation cancelled by user",
+
+        # STARTUP THREAD
+        "startup_checking_docker": "Checking Docker...",
+        "startup_starting_docker": "Starting Docker Desktop...",
+        "startup_docker_unavailable": "Docker Desktop not available.\nStart it manually and try again.",
+        "startup_docker_unavailable_linux": "Docker not available.\nInstall Docker and try again.",
+        "startup_docker_ok": "Docker OK",
+        "startup_checking_ollama": "Checking Ollama...",
+        "startup_starting_ollama": "Starting Ollama...",
+        "startup_ollama_unavailable": "Ollama not available.\nInstall Ollama and try again.",
+        "startup_ollama_ok": "Ollama OK",
+        "startup_starting_webui": "Starting Open WebUI...",
+        "startup_downloading_image": "Downloading image...",
+        "startup_containers_failed": "Unable to start containers.\n\nVerify that Docker is running.",
+        "startup_container_started": "Container started",
+        "startup_waiting_service": "Waiting for service...",
+        "startup_ready": "Ready!",
+        "startup_all_started": "All services started!",
+        "startup_waiting_docker": "Waiting for Docker Desktop... ({i}/40)",
+        "startup_waiting_ollama_msg": "Waiting for Ollama... ({i}/20)",
+        "startup_waiting_service_msg": "Waiting for service... ({i}/30)",
+
+        # INFO WIDGET CONTENT
+        "info_desc_html": (
+            "This program manages a local artificial intelligence system "
+            "based on <b>Open WebUI</b> and <b>Ollama</b>.<br><br>"
+            "It allows you to:<br>"
+            "• Start and stop AI services with one click<br>"
+            "• Download and manage language models (LLM)<br>"
+            "• Convert images for chat compatibility<br>"
+            "• Use Italian offline speech synthesis<br>"
+            "• Access the web interface from phone and tablet<br><br>"
+            "Everything runs <b>locally</b> on your computer, without sending data to external servers."
+        ),
+        "info_thanks_html": (
+            "<div style='text-align: center;'>"
+            "<p style='font-size: 12px; color: #2c3e50;'>"
+            "Thanks to this <b>open source</b> software, downloadable on "
+            "<a href='https://github.com/wildlux/OWUIM' style='color: #333;'>GitHub</a>, "
+            "you can leverage your computer to work <b>offline</b> "
+            "and maintain a professional profile without depending on the internet.<br>"
+            "All data stays on your device: <b>total privacy</b>, no information shared with third parties.<br>"
+            "Developed by <b>Paolo Lo Bello</b> | Version <b>1.1.0</b> | Open Source License<br>"
+            "<a href='https://wildlux.pythonanywhere.com/' style='color: #27ae60;'>Website</a> · "
+            "<a href='https://paololobello.altervista.org/' style='color: #e74c3c;'>Blog</a> · "
+            "<a href='https://www.linkedin.com/in/paololobello/' style='color: #0077b5;'>LinkedIn</a>"
+            "</p>"
+            "</div>"
+        ),
+        "info_shortcuts_html": (
+            "<table style='font-size: 11px;'>"
+            "<tr><td><b>Ctrl+1..8</b></td><td style='padding-left:12px;'>Switch to corresponding tab</td></tr>"
+            "<tr><td><b>Ctrl+R</b></td><td style='padding-left:12px;'>Refresh service status</td></tr>"
+            "<tr><td><b>Ctrl+B</b></td><td style='padding-left:12px;'>Open Open WebUI in browser</td></tr>"
+            "</table>"
+        ),
     }
 }
 

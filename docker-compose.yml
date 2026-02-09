@@ -20,7 +20,7 @@ services:
       - AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5556/v1
       - AUDIO_TTS_OPENAI_API_KEY=sk-local
       - AUDIO_TTS_MODEL=tts-1
-      - AUDIO_TTS_VOICE=paola
+      - AUDIO_TTS_VOICE=it-IT-IsabellaNeural
       # Servizi locali esterni
       - IMAGE_SERVICE_URL=http://host.docker.internal:5555
       - DOCUMENT_SERVICE_URL=http://host.docker.internal:5557
