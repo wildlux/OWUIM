@@ -35,6 +35,12 @@ try:
 except ImportError:
     HAS_FASTAPI = False
 
+# Protezione sicurezza
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import ALLOWED_ORIGINS, create_api_key_middleware, SAFE_HOST
+
 # Pillow per elaborazione immagini
 try:
     from PIL import Image
@@ -377,6 +383,26 @@ Se non contiene codice, descrivi cosa mostra."""
 # API SERVICE
 # ============================================================================
 
+try:
+    from pydantic import BaseModel, ConfigDict
+
+    class ImageHealthResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        service: str
+        status: str
+        ollama_url: str
+        vision_model: str
+
+    class ModelsResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        current_model: str
+        available: list
+        vision_capable: list
+except ImportError:
+    ImageHealthResponse = None
+    ModelsResponse = None
+
+
 def create_app() -> FastAPI:
     """Crea l'applicazione FastAPI."""
 
@@ -386,19 +412,22 @@ def create_app() -> FastAPI:
         version="1.0.0"
     )
 
-    # CORS per permettere richieste da Open WebUI
+    # CORS ristretto a localhost
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["*", "X-API-Key"],
     )
+
+    # API key middleware (protegge POST/PUT/DELETE)
+    create_api_key_middleware(app)
 
     # Inizializza analyzer
     analyzer = ImageAnalyzer()
 
-    @app.get("/")
+    @app.get("/", response_model=ImageHealthResponse)
     async def root():
         """Health check e info."""
         return {
@@ -417,7 +446,7 @@ def create_app() -> FastAPI:
             ]
         }
 
-    @app.get("/models")
+    @app.get("/models", response_model=ModelsResponse)
     async def list_models():
         """Lista modelli Ollama disponibili."""
         return {
@@ -599,7 +628,7 @@ def main():
 
     # Avvia server
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT, log_level="info")
+    uvicorn.run(app, host=SAFE_HOST, port=SERVICE_PORT, log_level="info")
 
 
 if __name__ == "__main__":

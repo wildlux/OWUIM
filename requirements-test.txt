@@ -1,0 +1,17 @@
+# Dipendenze per CI/CD e testing
+# NON include PyQt5, edge-tts o altre dipendenze pesanti/desktop
+#
+# Uso: pip install -r requirements-test.txt
+
+# Core servizi
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
+requests>=2.28.0
+
+# Testing
+pytest>=7.0.0
+httpx>=0.24.0
+
+# Linting
+flake8>=6.0.0

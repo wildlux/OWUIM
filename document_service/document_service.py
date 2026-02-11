@@ -59,6 +59,12 @@ try:
 except ImportError:
     HAS_FASTAPI = False
 
+# Protezione sicurezza
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import ALLOWED_ORIGINS, create_api_key_middleware, SAFE_HOST
+
 # pypdf - Lettura file PDF
 try:
     import pypdf
@@ -1653,6 +1659,21 @@ class DocumentReader:
 # API SERVICE - FastAPI
 # ============================================================================
 
+try:
+    from pydantic import BaseModel, ConfigDict
+
+    class DocHealthResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        service: str
+        version: str
+        status: str
+        port: int
+        formats_available: int
+        formats_total: int
+except ImportError:
+    DocHealthResponse = None
+
+
 def create_app() -> "FastAPI":
     """
     Crea e configura l'applicazione FastAPI.
@@ -1668,14 +1689,17 @@ def create_app() -> "FastAPI":
         redoc_url="/redoc"  # ReDoc disponibile su /redoc
     )
 
-    # Configura CORS per permettere richieste da Open WebUI
+    # CORS ristretto a localhost
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Permetti tutte le origini
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["*", "X-API-Key"],
     )
+
+    # API key middleware (protegge POST/PUT/DELETE)
+    create_api_key_middleware(app)
 
     # Inizializza il reader
     reader = DocumentReader()
@@ -1683,7 +1707,7 @@ def create_app() -> "FastAPI":
     # -------------------------------------------------------------------------
     # ENDPOINT: Home / Health Check
     # -------------------------------------------------------------------------
-    @app.get("/", tags=["Info"])
+    @app.get("/", tags=["Info"], response_model=DocHealthResponse)
     async def root() -> Dict[str, Any]:
         """
         Health check e informazioni sul servizio.
@@ -1990,7 +2014,7 @@ def main() -> None:
     app = create_app()
     uvicorn.run(
         app,
-        host="0.0.0.0",  # Accetta connessioni da qualsiasi IP
+        host=SAFE_HOST,
         port=SERVICE_PORT,
         log_level="info"
     )

@@ -24,6 +24,12 @@ import argparse
 from pathlib import Path
 from typing import Optional, Tuple
 
+# Protezione path traversal
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import validate_path
+
 try:
     from PIL import Image
     HAS_PIL = True
@@ -60,6 +66,12 @@ class ImageConverter:
         Returns:
             (successo, messaggio/percorso)
         """
+        try:
+            safe_path = validate_path(svg_path)
+            svg_path = str(safe_path)
+        except ValueError as e:
+            return False, f"Accesso negato: {e}"
+
         if not HAS_CAIRO:
             # Fallback: prova con Inkscape
             return self._convert_svg_inkscape(svg_path, output_path)
@@ -115,6 +127,12 @@ class ImageConverter:
         Returns:
             (successo, messaggio/percorso)
         """
+        try:
+            safe_path = validate_path(image_path)
+            image_path = str(safe_path)
+        except ValueError as e:
+            return False, f"Accesso negato: {e}"
+
         if not HAS_PIL:
             return False, "Pillow non installato. Esegui: pip install Pillow"
 
@@ -165,6 +183,12 @@ class ImageConverter:
         Returns:
             (successo, base64_string o messaggio errore)
         """
+        try:
+            safe_path = validate_path(image_path)
+            image_path = str(safe_path)
+        except ValueError as e:
+            return False, f"Accesso negato: {e}"
+
         if not HAS_PIL:
             return False, "Pillow non installato. Esegui: pip install Pillow"
 
@@ -248,10 +272,13 @@ class ImageConverter:
         Returns:
             Dict con risultato
         """
-        path = Path(input_path)
+        try:
+            safe_path = validate_path(input_path)
+            input_path = str(safe_path)
+        except ValueError as e:
+            return {"success": False, "error": f"Accesso negato: {e}"}
 
-        if not path.exists():
-            return {"success": False, "error": f"File non trovato: {input_path}"}
+        path = Path(input_path)
 
         if not HAS_PIL:
             return {"success": False, "error": "Pillow non installato"}

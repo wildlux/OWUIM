@@ -5,11 +5,19 @@ version: 1.0.0
 description: Analizza immagini tramite servizio locale. Evita il bug base64 di Open WebUI convertendo immagini in descrizioni testuali.
 """
 
+import sys
+from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import Optional
 import requests
 import base64
 import json
+
+# Protezione path traversal
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import validate_path
 
 
 class Tools:
@@ -154,21 +162,24 @@ Avvia il servizio con: `python image_service.py`"""
 Avvia il servizio con: `python image_service.py`"""
 
         try:
-            with open(file_path, "rb") as f:
+            safe_path = validate_path(file_path)
+        except ValueError as e:
+            return f"Errore: Accesso negato: {e}"
+
+        try:
+            with open(safe_path, "rb") as f:
                 image_bytes = f.read()
 
             image_base64 = base64.b64encode(image_bytes).decode()
             result = self._analyze_image(image_base64, analysis_type)
 
             if "error" in result:
-                return f"❌ Errore: {result['error']}"
+                return f"Errore: {result['error']}"
 
             return self._format_result(result)
 
-        except FileNotFoundError:
-            return f"❌ File non trovato: {file_path}"
         except Exception as e:
-            return f"❌ Errore: {e}"
+            return f"Errore: {e}"
 
     def analyze_math_image(
         self,

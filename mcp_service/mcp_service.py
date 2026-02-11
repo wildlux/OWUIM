@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Optional
 
 # FastAPI per health check e gestione
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -42,6 +42,24 @@ except ImportError:
 
 import requests
 from pathlib import Path
+
+# Protezione path traversal
+sys_path = str(Path(__file__).parent.parent)
+if sys_path not in __import__('sys').path:
+    __import__('sys').path.insert(0, sys_path)
+from security import validate_path, ALLOWED_ORIGINS, get_api_key_header, SAFE_HOST
+
+try:
+    from pydantic import BaseModel, ConfigDict
+
+    class MCPHealthResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        service: str
+        version: str
+        port: int
+        mcp_available: bool
+except ImportError:
+    MCPHealthResponse = None
 
 # Configurazione
 SERVICE_PORT = 5558
@@ -146,7 +164,8 @@ class ServiceBridge:
                       model: str = "llava") -> dict:
         """Analizza un'immagine"""
         try:
-            with open(image_path, "rb") as f:
+            safe_path = validate_path(image_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(image_path).name, f, "image/png")}
                 data = {"prompt": prompt, "model": model}
                 resp = requests.post(
@@ -164,7 +183,8 @@ class ServiceBridge:
     def image_describe(self, image_path: str) -> dict:
         """Descrizione veloce di un'immagine"""
         try:
-            with open(image_path, "rb") as f:
+            safe_path = validate_path(image_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(image_path).name, f, "image/png")}
                 resp = requests.post(
                     f"{IMAGE_SERVICE_URL}/describe",
@@ -180,7 +200,8 @@ class ServiceBridge:
     def image_extract_text(self, image_path: str) -> dict:
         """Estrai testo da immagine (OCR)"""
         try:
-            with open(image_path, "rb") as f:
+            safe_path = validate_path(image_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(image_path).name, f, "image/png")}
                 resp = requests.post(
                     f"{IMAGE_SERVICE_URL}/extract-text",
@@ -208,7 +229,8 @@ class ServiceBridge:
     def document_read(self, file_path: str) -> dict:
         """Leggi un documento"""
         try:
-            with open(file_path, "rb") as f:
+            safe_path = validate_path(file_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(file_path).name, f)}
                 resp = requests.post(
                     f"{DOCUMENT_SERVICE_URL}/read",
@@ -224,7 +246,8 @@ class ServiceBridge:
     def document_extract_text(self, file_path: str) -> dict:
         """Estrai solo testo da documento"""
         try:
-            with open(file_path, "rb") as f:
+            safe_path = validate_path(file_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(file_path).name, f)}
                 resp = requests.post(
                     f"{DOCUMENT_SERVICE_URL}/extract-text",
@@ -240,7 +263,8 @@ class ServiceBridge:
     def document_summary(self, file_path: str) -> dict:
         """Riassunto di un documento"""
         try:
-            with open(file_path, "rb") as f:
+            safe_path = validate_path(file_path)
+            with open(safe_path, "rb") as f:
                 files = {"file": (Path(file_path).name, f)}
                 resp = requests.post(
                     f"{DOCUMENT_SERVICE_URL}/summary",
@@ -508,14 +532,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-API-Key"],
 )
 
 
-@app.get("/")
+@app.get("/", response_model=MCPHealthResponse)
 async def root():
     """Health check e info servizio"""
     services_status = bridge.check_all_services()
@@ -550,21 +574,32 @@ async def get_tools():
 
 # ==================== CLI Test Endpoints ====================
 
-@app.post("/test/tts")
+_auth = get_api_key_header()
+
+
+@app.post("/test/tts", dependencies=[Depends(_auth)])
 async def test_tts(text: str = "Ciao, questo è un test del servizio TTS"):
     """Test TTS"""
     return bridge.tts_speak(text)
 
 
-@app.post("/test/image")
+@app.post("/test/image", dependencies=[Depends(_auth)])
 async def test_image(image_path: str):
     """Test analisi immagine"""
+    try:
+        validate_path(image_path)
+    except ValueError as e:
+        return {"success": False, "error": f"Accesso negato: {e}"}
     return bridge.image_analyze(image_path)
 
 
-@app.post("/test/document")
+@app.post("/test/document", dependencies=[Depends(_auth)])
 async def test_document(file_path: str):
     """Test lettura documento"""
+    try:
+        validate_path(file_path)
+    except ValueError as e:
+        return {"success": False, "error": f"Accesso negato: {e}"}
     return bridge.document_read(file_path)
 
 
@@ -586,4 +621,4 @@ if __name__ == "__main__":
     print(f"  Tools:    http://localhost:{SERVICE_PORT}/tools")
     print("=" * 60)
 
-    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT)
+    uvicorn.run(app, host=SAFE_HOST, port=SERVICE_PORT)

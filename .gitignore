@@ -20,6 +20,7 @@
 *.crt
 *.pfx
 .secrets
+.api_key
 
 # Screenshots (may contain sensitive info)
 Schermata_*.png

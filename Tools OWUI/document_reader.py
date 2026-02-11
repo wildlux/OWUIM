@@ -7,11 +7,19 @@ required_open_webui_version: 0.4.0
 """
 
 import os
+import sys
 import json
 import base64
 import tempfile
 from typing import Optional
+from pathlib import Path
 from pydantic import BaseModel, Field
+
+# Protezione path traversal
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import validate_path
 
 # Requests per chiamate API
 try:
@@ -101,18 +109,20 @@ class Tools:
         Returns:
             Contenuto del documento in formato testuale/JSON
         """
-        # Verifica esistenza file
-        if not os.path.exists(file_path):
-            return f"Errore: File non trovato: {file_path}"
+        # Validazione path
+        try:
+            safe_path = validate_path(file_path)
+        except ValueError as e:
+            return f"Errore: Accesso negato: {e}"
 
         # Leggi file
         try:
-            with open(file_path, "rb") as f:
+            with open(safe_path, "rb") as f:
                 file_bytes = f.read()
         except Exception as e:
             return f"Errore lettura file: {str(e)}"
 
-        filename = os.path.basename(file_path)
+        filename = safe_path.name
 
         # Chiama servizio
         endpoint = "/extract-text" if extract_only_text else "/read"
@@ -182,16 +192,18 @@ class Tools:
         Returns:
             Metadati del documento (formato, pagine, autore, etc.)
         """
-        if not os.path.exists(file_path):
-            return f"Errore: File non trovato: {file_path}"
+        try:
+            safe_path = validate_path(file_path)
+        except ValueError as e:
+            return f"Errore: Accesso negato: {e}"
 
         try:
-            with open(file_path, "rb") as f:
+            with open(safe_path, "rb") as f:
                 file_bytes = f.read()
         except Exception as e:
             return f"Errore lettura file: {str(e)}"
 
-        filename = os.path.basename(file_path)
+        filename = safe_path.name
         result = self._call_service("/get-metadata", file_bytes, filename)
 
         if "error" in result:
@@ -216,16 +228,18 @@ class Tools:
         Returns:
             Riassunto del documento
         """
-        if not os.path.exists(file_path):
-            return f"Errore: File non trovato: {file_path}"
+        try:
+            safe_path = validate_path(file_path)
+        except ValueError as e:
+            return f"Errore: Accesso negato: {e}"
 
         try:
-            with open(file_path, "rb") as f:
+            with open(safe_path, "rb") as f:
                 file_bytes = f.read()
         except Exception as e:
             return f"Errore lettura file: {str(e)}"
 
-        filename = os.path.basename(file_path)
+        filename = safe_path.name
         result = self._call_service("/summary", file_bytes, filename, max_chars=str(max_chars))
 
         if "error" in result:

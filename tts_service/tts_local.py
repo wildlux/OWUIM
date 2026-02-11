@@ -38,6 +38,12 @@ try:
 except ImportError:
     HAS_FASTAPI = False
 
+# Protezione sicurezza
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import ALLOWED_ORIGINS, create_api_key_middleware, SAFE_HOST
+
 # Requests per download modelli
 try:
     import requests
@@ -450,6 +456,40 @@ class PiperTTS:
 # API SERVICE
 # ============================================================================
 
+try:
+    from pydantic import BaseModel, ConfigDict
+    HAS_PYDANTIC = True
+except ImportError:
+    HAS_PYDANTIC = False
+
+if HAS_PYDANTIC:
+    class HealthResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        service: str
+        status: str
+        ready: bool
+        ready_message: str
+        port: int
+
+    class VoicesResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        voices: list
+        default: str
+        language: str
+
+    class VoiceCheckResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        ready: bool
+        piper_available: bool
+        voices_installed: list
+        voices_missing: list
+
+    class SpeechReadyResponse(BaseModel):
+        model_config = ConfigDict(extra="allow")
+        ready: bool
+        message: str
+
+
 def create_app() -> FastAPI:
     """Crea l'applicazione FastAPI."""
 
@@ -461,11 +501,14 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["*", "X-API-Key"],
     )
+
+    # API key middleware (protegge POST/PUT/DELETE)
+    create_api_key_middleware(app)
 
     # Inizializza Piper TTS
     tts = PiperTTS()
@@ -482,7 +525,9 @@ def create_app() -> FastAPI:
         except Exception as e:
             print(f"[!] System Profiler non disponibile: {e}")
 
-    @app.get("/")
+    _health_model = HealthResponse if HAS_PYDANTIC else None
+
+    @app.get("/", response_model=_health_model)
     async def root():
         """Health check e info."""
         installed = [v for v, info in tts.available_models.items() if info.get("installed")]
@@ -568,7 +613,9 @@ def create_app() -> FastAPI:
             }
         }
 
-    @app.get("/voices")
+    _voices_model = VoicesResponse if HAS_PYDANTIC else None
+
+    @app.get("/voices", response_model=_voices_model)
     async def list_voices():
         """Lista le voci italiane disponibili."""
         voices = []
@@ -715,7 +762,9 @@ def create_app() -> FastAPI:
             return FileResponse(test_file, media_type="audio/wav")
         raise HTTPException(404, "Nessun audio di test")
 
-    @app.get("/voices/check")
+    _check_model = VoiceCheckResponse if HAS_PYDANTIC else None
+
+    @app.get("/voices/check", response_model=_check_model)
     async def check_voices():
         """
         Verifica se le voci sono disponibili per l'uso.
@@ -745,7 +794,9 @@ def create_app() -> FastAPI:
             "action": None if ready else "open_voice_tab"
         }
 
-    @app.get("/v1/audio/speech/ready")
+    _ready_model = SpeechReadyResponse if HAS_PYDANTIC else None
+
+    @app.get("/v1/audio/speech/ready", response_model=_ready_model)
     async def check_speech_ready():
         """
         Endpoint di preflight check per Open WebUI.
@@ -994,7 +1045,7 @@ def main():
     print("[*] Premi Ctrl+C per fermare\n")
 
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT, log_level="info")
+    uvicorn.run(app, host=SAFE_HOST, port=SERVICE_PORT, log_level="info")
 
 
 if __name__ == "__main__":

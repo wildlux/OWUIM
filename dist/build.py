@@ -34,11 +34,12 @@ BOLD = '\033[1m'
 
 # Directory
 SCRIPT_DIR = Path(__file__).parent.resolve()
-DIST_DIR = SCRIPT_DIR / "dist"
-ICON_PNG = SCRIPT_DIR / "ICONA" / "ICONA_Trasparente.png"
-ICON_ICO = SCRIPT_DIR / "ICONA" / "ICONA.ico"
-GUI_SCRIPT = SCRIPT_DIR / "openwebui_gui.py"
-VENV_DIR = SCRIPT_DIR / "venv"
+PROJECT_ROOT = SCRIPT_DIR.parent  # Root del progetto (padre di dist/)
+DIST_DIR = SCRIPT_DIR
+ICON_PNG = PROJECT_ROOT / "ICONA" / "ICONA_Trasparente.png"
+ICON_ICO = PROJECT_ROOT / "ICONA" / "ICONA.ico"
+GUI_SCRIPT = PROJECT_ROOT / "openwebui_gui.py"
+VENV_DIR = PROJECT_ROOT / "venv"
 VERSION = "1.1.0"
 APP_NAME = "OpenWebUI-Manager"
 
@@ -208,11 +209,11 @@ def build_windows():
 
     # Usa percorsi con virgolette per gestire spazi
     gui_script_str = str(GUI_SCRIPT).replace("\\", "\\\\")
-    script_dir_str = str(SCRIPT_DIR).replace("\\", "\\\\")
-    icon_dir_str = str(SCRIPT_DIR / "ICONA").replace("\\", "\\\\")
-    tools_dir_str = str(SCRIPT_DIR / "Tools OWUI").replace("\\", "\\\\")
-    scripts_dir_str = str(SCRIPT_DIR / "scripts").replace("\\", "\\\\")
-    compose_str = str(SCRIPT_DIR / "docker-compose.yml").replace("\\", "\\\\")
+    script_dir_str = str(PROJECT_ROOT).replace("\\", "\\\\")
+    icon_dir_str = str(PROJECT_ROOT / "ICONA").replace("\\", "\\\\")
+    tools_dir_str = str(PROJECT_ROOT / "Tools OWUI").replace("\\", "\\\\")
+    scripts_dir_str = str(PROJECT_ROOT / "scripts").replace("\\", "\\\\")
+    compose_str = str(PROJECT_ROOT / "docker-compose.yml").replace("\\", "\\\\")
     icon_ico_str = str(ICON_ICO).replace("\\", "\\\\")
 
     # Crea spec file
@@ -273,7 +274,7 @@ exe = EXE(
     cmd = f'"{pyinstaller_path}" --clean --noconfirm "{spec_file}"'
     if run(cmd):
         # Sposta in dist/
-        exe_path = SCRIPT_DIR / "dist" / f"{APP_NAME}.exe"
+        exe_path = PROJECT_ROOT / "dist" / f"{APP_NAME}.exe"
         if exe_path.exists():
             final_path = DIST_DIR / f"{APP_NAME}.exe"
             if final_path.exists():
@@ -300,18 +301,21 @@ def build_linux():
 
     cmd = f'''pyinstaller --onefile --windowed --name={APP_NAME} \
         {icon_opt} \
-        --add-data="{SCRIPT_DIR / 'ICONA'}:ICONA" \
-        --add-data="{SCRIPT_DIR / 'tools'}:tools" \
-        --add-data="{SCRIPT_DIR / 'scripts'}:scripts" \
-        --add-data="{SCRIPT_DIR / 'docker-compose.yml'}:." \
+        --add-data="{PROJECT_ROOT / 'ICONA'}:ICONA" \
+        --add-data="{PROJECT_ROOT / 'Tools OWUI'}:Tools OWUI" \
+        --add-data="{PROJECT_ROOT / 'scripts'}:scripts" \
+        --add-data="{PROJECT_ROOT / 'docker-compose.yml'}:." \
+        --add-data="{PROJECT_ROOT / 'security.py'}:." \
         --hidden-import=PyQt5.sip \
         "{GUI_SCRIPT}" '''
 
     if run(cmd):
-        # Sposta binario
-        bin_path = SCRIPT_DIR / "dist" / APP_NAME
+        # Sposta binario (PyInstaller lo crea in dist/ relativo al cwd)
+        bin_path = PROJECT_ROOT / "dist" / APP_NAME
         if bin_path.exists():
             final_bin = DIST_DIR / f"{APP_NAME}-Linux-x86_64"
+            if final_bin.exists():
+                final_bin.unlink()
             shutil.move(str(bin_path), str(final_bin))
             os.chmod(final_bin, 0o755)
             print(f"  {G}[OK]{N} Creato: {final_bin}")
@@ -377,7 +381,7 @@ exec "$HERE/usr/bin/{APP_NAME}" "$@"
 
     # Build AppImage
     appimage_path = DIST_DIR / f"{APP_NAME}-x86_64.AppImage"
-    if run(f'appimagetool "{appdir}" "{appimage_path}"'):
+    if run(f'ARCH=x86_64 appimagetool "{appdir}" "{appimage_path}"'):
         print(f"  {G}[OK]{N} Creato: {appimage_path}")
         shutil.rmtree(appdir)
         return True
@@ -433,10 +437,13 @@ def build_bat_portable():
         ("docker-compose.yml", None),
         ("requirements.txt", None),
         ("config.py", None),
+        ("security.py", None),
+        ("system_profiler.py", None),
         ("translations.py", None),
         ("run_gui.bat", None),
         ("run_gui_lite.bat", None),
         ("ICONA", None),
+        ("ui", None),
         ("Tools OWUI", None),
         ("scripts", None),
         ("image_analysis", None),

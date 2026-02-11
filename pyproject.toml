@@ -1,0 +1,19 @@
+[project]
+name = "ollama-webui-manager"
+version = "1.1.0"
+description = "Sistema AI locale con Open WebUI + Ollama, 14 tools, Scientific Council"
+requires-python = ">=3.8"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E501", "W503", "W504", "E402", "F401", "E722", "E226", "E128", "E306", "F841", "F541"]
+exclude = [".git", "__pycache__", "dist", "venv", ".venv", "node_modules"]

@@ -6,18 +6,18 @@ services:
       - "3000:8080"
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - WEBUI_SECRET_KEY=your-secret-key-change-this
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:?Imposta WEBUI_SECRET_KEY nel file .env}
       - DEFAULT_LOCALE=it-IT
       - WEBUI_NAME=Open WebUI
       - DEFAULT_MODELS=
-      - ENABLE_SIGNUP=true
+      - ENABLE_SIGNUP=false
       - AUDIO_STT_ENGINE=openai
       - AUDIO_STT_MODEL=whisper-1
       - WHISPER_MODEL=base
       - AUDIO_STT_LANGUAGE=it
       # TTS locale con OpenedAI Speech (Piper)
       - AUDIO_TTS_ENGINE=openai
-      - AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5556/v1
+      - AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:8000/v1
       - AUDIO_TTS_OPENAI_API_KEY=sk-local
       - AUDIO_TTS_MODEL=tts-1
       - AUDIO_TTS_VOICE=it-IT-IsabellaNeural
@@ -28,7 +28,10 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - open_webui_data:/app/backend/data
-      - /home/wildlux:/app/backend/data/uploads/wildlux
+      - /home/wildlux/Documenti:/app/backend/data/uploads/Documenti:ro
+      - /home/wildlux/Documents:/app/backend/data/uploads/Documents:ro
+      - /home/wildlux/Scaricati:/app/backend/data/uploads/Scaricati:ro
+      - /home/wildlux/Downloads:/app/backend/data/uploads/Downloads:ro
     restart: unless-stopped
     depends_on:
       - openedai-speech

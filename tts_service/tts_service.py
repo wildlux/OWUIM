@@ -47,6 +47,12 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
+# Protezione sicurezza
+_security_path = str(Path(__file__).parent.parent)
+if _security_path not in sys.path:
+    sys.path.insert(0, _security_path)
+from security import ALLOWED_ORIGINS, create_api_key_middleware, SAFE_HOST
+
 
 # ============================================================================
 # CONFIGURAZIONE
@@ -418,11 +424,14 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["*", "X-API-Key"],
     )
+
+    # API key middleware (protegge POST/PUT/DELETE)
+    create_api_key_middleware(app)
 
     # Inizializza TTS Manager
     manager = TTSManager()
@@ -698,7 +707,7 @@ def main():
 
     # Avvia server
     app = create_app()
-    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT, log_level="info")
+    uvicorn.run(app, host=SAFE_HOST, port=SERVICE_PORT, log_level="info")
 
 
 if __name__ == "__main__":
