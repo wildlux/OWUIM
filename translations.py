@@ -113,6 +113,10 @@ TRANSLATIONS = {
         "repair_tooltip": "Riavvia i container e pulisce la cache",
         "backup_button": "💾 Backup USB",
         "backup_tooltip": "Crea backup dei dati su USB",
+        "update_ollama_button": "🦙 Aggiorna Ollama",
+        "update_ollama_tooltip": "Apri il sito ufficiale per aggiornare Ollama",
+        "update_docker_button": "🐳 Aggiorna Docker",
+        "update_docker_tooltip": "Apri il sito ufficiale per aggiornare Docker",
         "lan_disabled_title": "Accesso LAN Disabilitato",
         "lan_disabled_msg": "🔒 Accesso limitato a localhost.\n\nSolo questo PC puo' accedere a Open WebUI.",
         "lan_enabled_title": "✅ Accesso LAN Abilitato",
@@ -488,7 +492,8 @@ TRANSLATIONS = {
             "• Convertire immagini per la compatibilita' con la chat<br>"
             "• Usare la sintesi vocale italiana offline<br>"
             "• Accedere all'interfaccia web da cellulare e tablet<br><br>"
-            "Tutto funziona <b>localmente</b> sul tuo computer, senza inviare dati a server esterni."
+            "Tutto funziona <b>localmente</b> sul tuo computer, senza inviare dati a server esterni.<br><br>"
+            "🛡️ <b>Protezione anti-Rootkit</b> a livello di rete LAN: il software e' blindato dall'interno."
         ),
         "info_thanks_html": (
             "<div style='text-align: center;'>"
@@ -510,8 +515,138 @@ TRANSLATIONS = {
             "<tr><td><b>Ctrl+1..8</b></td><td style='padding-left:12px;'>Passa al tab corrispondente</td></tr>"
             "<tr><td><b>Ctrl+R</b></td><td style='padding-left:12px;'>Aggiorna stato servizi</td></tr>"
             "<tr><td><b>Ctrl+B</b></td><td style='padding-left:12px;'>Apri Open WebUI nel browser</td></tr>"
+            "<tr><td><b>Ctrl+F</b></td><td style='padding-left:12px;'>Cambia font (Arial / OpenDyslexic / DejaVu)</td></tr>"
             "</table>"
         ),
+        "report_issue_tooltip": "Apri GitHub Issues per segnalare un bug o proporre un miglioramento",
+        "support_desc": "Descrivi il problema e includi eventuali messaggi di errore",
+
+        # MAIN WINDOW EXTRA
+        "executing": "Esecuzione...",
+        "font_saved": "Font {scale}% salvato come predefinito",
+        "font_changed": "Font cambiato: {font}",
+
+        # CONFIG WIDGET EXTRA
+        "lan_mobile_info": (
+            "📱 Per collegarti dal cellulare:\n\n"
+            "   Indirizzo:  http://{ip}:{port}\n\n"
+            "   1. Connetti il cellulare alla stessa WiFi\n"
+            "   2. Apri il browser e vai all'indirizzo sopra\n"
+            "   3. Effettua il login con le tue credenziali"
+        ),
+        "no_qr_install": "(Installa 'qrcode' per vedere il QR:\npip install qrcode[pil])",
+        "pwa_instructions": (
+            "<b>📲 Installa come App (PWA):</b><br><br>"
+            "1. Apri Chrome sul cellulare<br>"
+            "2. Scansiona il QR code o vai all'indirizzo<br>"
+            "3. Menu ⋮ → 'Aggiungi a schermata Home'<br>"
+            "4. Avrai un'icona come app!<br><br>"
+            "<i>⚠️ Cellulare e PC devono essere sulla stessa WiFi</i>"
+        ),
+        "enabling_lan": "Abilitazione accesso LAN...",
+        "disabling_lan": "Disabilitazione accesso LAN...",
+        "configuring_https": "Configurazione HTTPS...",
+        "checking": "Controllo...",
+        "italian_guide_html": (
+            "<h2>Configurazione Italiano in Open WebUI</h2>"
+            "<h3>1. Lingua Interfaccia</h3>"
+            "<p>Settings → Interface → Language → <b>Italiano</b></p>"
+            "<h3>2. System Prompt</h3>"
+            "<p>Settings → Personalization → System Prompt</p>"
+            "<pre style='background: #f5f5f5; padding: 10px;'>"
+            "Sei un assistente AI che risponde SEMPRE in italiano.\n"
+            "Non importa la lingua della domanda, rispondi sempre in italiano.\n"
+            "Usa un linguaggio chiaro, professionale e amichevole.</pre>"
+            "<h3>3. Modello Predefinito</h3>"
+            "<p>Settings → Models → Default Model → <b>mistral:7b-instruct</b> (consigliato)</p>"
+        ),
+        "version_check_error_title": "Errore Controllo Versione",
+        "version_check_error_msg": "Impossibile verificare la versione:\n{error}\n\nVerifica la connessione internet.",
+        "update_title": "Aggiornamento Open WebUI",
+        "update_up_to_date": "Open WebUI e' gia' aggiornato!",
+        "update_version_installed": "Versione installata: <b>{current}</b>",
+        "update_version_latest": "Ultima disponibile: <b>{latest}</b> ({date})",
+        "update_no_action": "Nessun aggiornamento necessario.",
+        "update_changelog": "Novita'",
+        "update_available": "Nuova versione disponibile!",
+        "update_details": (
+            "L'aggiornamento scarichera' la nuova immagine Docker\n"
+            "e riavviera' i servizi. I tuoi dati saranno preservati."
+        ),
+        "update_now": "Aggiorna Ora",
+        "update_not_now": "Non Ora",
+        "updating_openwebui": "Aggiornamento Open WebUI...",
+        "repairing_openwebui": "Riparazione Open WebUI...",
+        "backup_title": "Backup",
+        "backup_windows_msg": (
+            "Su Windows, usa il File Explorer per copiare manualmente:\n\n"
+            "• Cartella: {path}\n"
+            "• Volumi Docker (open-webui-data)"
+        ),
+
+        # TTS WIDGET EXTRA
+        "tts_ready_detail": "TTS pronto.\nVoci: {voices}",
+        "tts_no_voices_warning": (
+            "⚠️ ATTENZIONE: La sintesi vocale NON funzionera'!\n\n"
+            "Devi scaricare almeno una voce italiana.\n"
+            "Usa i pulsanti 'Scarica' qui sotto."
+        ),
+        "tts_piper_not_installed": "Piper TTS non installato.\nClicca 'Scarica Tutte' per installare.",
+        "tts_error_generic": "Errore: {error}",
+        "tts_error_http": "Errore HTTP: {code}",
+        "tts_test_success": (
+            "✓ Test completato!\n"
+            "Voce: {voice}\n"
+            "Dimensione: {size} KB\n"
+            "Tempo: {time} ms\n"
+            "Offline: {offline}"
+        ),
+        "tts_test_error": "✗ Errore: {error}",
+        "tts_test_ensure_active": "Assicurati che il servizio TTS sia attivo.",
+        "tts_audio_playing": "▶ Audio in riproduzione...",
+        "tts_audio_downloading": "⏳ Download audio...",
+        "tts_audio_system_player": "▶ Audio aperto nel player di sistema",
+        "tts_playback_complete": "✓ Riproduzione completata",
+        "tts_player_error": "✗ Errore player: {error}",
+        "tts_audio_download_error": "✗ Errore download audio: {code}",
+        "tts_playback_error": "✗ Errore riproduzione: {error}",
+        "tts_player_open_error": "✗ Errore apertura player: {error}",
+        "tts_unknown_error": "Errore sconosciuto",
+        "tts_docker_not_found": "File di configurazione Docker (docker-compose.yml) non trovato",
+        "tts_apply_confirm": "Vuoi modificare docker-compose.yml per usare le voci italiane locali?\n\nVerra' creato un backup del file originale.",
+        "tts_apply_success": "docker-compose.yml aggiornato!\n\nRiavvia Open WebUI con:\ndocker compose down && docker compose up -d",
+        "yes_offline": "SI",
+        "no_offline": "NO",
+
+        # ARCHIVIO EXTRA
+        "archive_step1_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #27ae60; margin: 2px 0;'>"
+            "<b style='color: #27ae60;'>1.</b> <b>Scegli la cartella</b><br>"
+            "Naviga e clicca ⭐ sulla cartella desiderata</div>"
+        ),
+        "archive_step2_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #f39c12; margin: 2px 0;'>"
+            "<b style='color: #f39c12;'>2.</b> <b>Copia nel file di configurazione</b></div>"
+        ),
+        "archive_step3_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #3498db; margin: 2px 0;'>"
+            "<b style='color: #3498db;'>3.</b> <b>Riavvia Docker</b><br>"
+            "Fatto! I file ⭐ saranno visibili in Open WebUI</div>"
+        ),
+        "archive_volume_placeholder": "- /percorso/cartella:/app/backend/data/uploads",
+        "archive_folder_missing_tooltip": "Cartella non trovata sul disco",
+        "archive_exported": "✓ Esportato: {filename}",
+        "archive_type": "Tipo: {mime}",
+        "archive_base64_length": "Lunghezza Base64: {length} caratteri",
+        "archive_compatible_chat": "Compatibile chat: {compat}",
+        "archive_compatible_yes": "SI",
+        "archive_compatible_no": "NO (troppo grande per chat)",
+        "archive_export_error": "✗ Errore: {error}",
+
+        # LOGS EXTRA
+        "loading_realtime_logs": "Caricamento log in tempo reale...",
+        "no_log_entries": "(nessun log)",
+        "log_error": "Errore: {error}",
     },
 
     "en": {
@@ -623,6 +758,10 @@ TRANSLATIONS = {
         "repair_tooltip": "Restart containers and clean cache",
         "backup_button": "💾 USB Backup",
         "backup_tooltip": "Backup data to USB",
+        "update_ollama_button": "🦙 Update Ollama",
+        "update_ollama_tooltip": "Open official site to update Ollama",
+        "update_docker_button": "🐳 Update Docker",
+        "update_docker_tooltip": "Open official site to update Docker",
         "lan_disabled_title": "LAN Access Disabled",
         "lan_disabled_msg": "🔒 Access limited to localhost.\n\nOnly this PC can access Open WebUI.",
         "lan_enabled_title": "✅ LAN Access Enabled",
@@ -998,7 +1137,8 @@ TRANSLATIONS = {
             "• Convert images for chat compatibility<br>"
             "• Use Italian offline speech synthesis<br>"
             "• Access the web interface from phone and tablet<br><br>"
-            "Everything runs <b>locally</b> on your computer, without sending data to external servers."
+            "Everything runs <b>locally</b> on your computer, without sending data to external servers.<br><br>"
+            "🛡️ <b>Anti-Rootkit protection</b> at LAN network level: the software is hardened from within."
         ),
         "info_thanks_html": (
             "<div style='text-align: center;'>"
@@ -1020,8 +1160,138 @@ TRANSLATIONS = {
             "<tr><td><b>Ctrl+1..8</b></td><td style='padding-left:12px;'>Switch to corresponding tab</td></tr>"
             "<tr><td><b>Ctrl+R</b></td><td style='padding-left:12px;'>Refresh service status</td></tr>"
             "<tr><td><b>Ctrl+B</b></td><td style='padding-left:12px;'>Open Open WebUI in browser</td></tr>"
+            "<tr><td><b>Ctrl+F</b></td><td style='padding-left:12px;'>Change font (Arial / OpenDyslexic / DejaVu)</td></tr>"
             "</table>"
         ),
+        "report_issue_tooltip": "Open GitHub Issues to report a bug or suggest an improvement",
+        "support_desc": "Describe the problem and include any error messages",
+
+        # MAIN WINDOW EXTRA
+        "executing": "Executing...",
+        "font_saved": "Font {scale}% saved as default",
+        "font_changed": "Font changed: {font}",
+
+        # CONFIG WIDGET EXTRA
+        "lan_mobile_info": (
+            "📱 To connect from mobile:\n\n"
+            "   Address:  http://{ip}:{port}\n\n"
+            "   1. Connect your phone to the same WiFi\n"
+            "   2. Open the browser and go to the address above\n"
+            "   3. Log in with your credentials"
+        ),
+        "no_qr_install": "(Install 'qrcode' to see the QR:\npip install qrcode[pil])",
+        "pwa_instructions": (
+            "<b>📲 Install as App (PWA):</b><br><br>"
+            "1. Open Chrome on your phone<br>"
+            "2. Scan the QR code or go to the address<br>"
+            "3. Menu ⋮ → 'Add to Home Screen'<br>"
+            "4. You'll have an icon like an app!<br><br>"
+            "<i>⚠️ Phone and PC must be on the same WiFi</i>"
+        ),
+        "enabling_lan": "Enabling LAN access...",
+        "disabling_lan": "Disabling LAN access...",
+        "configuring_https": "Configuring HTTPS...",
+        "checking": "Checking...",
+        "italian_guide_html": (
+            "<h2>Italian Configuration in Open WebUI</h2>"
+            "<h3>1. Interface Language</h3>"
+            "<p>Settings → Interface → Language → <b>Italiano</b></p>"
+            "<h3>2. System Prompt</h3>"
+            "<p>Settings → Personalization → System Prompt</p>"
+            "<pre style='background: #f5f5f5; padding: 10px;'>"
+            "You are an AI assistant that ALWAYS responds in Italian.\n"
+            "No matter the language of the question, always respond in Italian.\n"
+            "Use clear, professional and friendly language.</pre>"
+            "<h3>3. Default Model</h3>"
+            "<p>Settings → Models → Default Model → <b>mistral:7b-instruct</b> (recommended)</p>"
+        ),
+        "version_check_error_title": "Version Check Error",
+        "version_check_error_msg": "Unable to check version:\n{error}\n\nCheck your internet connection.",
+        "update_title": "Open WebUI Update",
+        "update_up_to_date": "Open WebUI is already up to date!",
+        "update_version_installed": "Installed version: <b>{current}</b>",
+        "update_version_latest": "Latest available: <b>{latest}</b> ({date})",
+        "update_no_action": "No update required.",
+        "update_changelog": "What's New",
+        "update_available": "New version available!",
+        "update_details": (
+            "The update will download the new Docker image\n"
+            "and restart services. Your data will be preserved."
+        ),
+        "update_now": "Update Now",
+        "update_not_now": "Not Now",
+        "updating_openwebui": "Updating Open WebUI...",
+        "repairing_openwebui": "Repairing Open WebUI...",
+        "backup_title": "Backup",
+        "backup_windows_msg": (
+            "On Windows, use File Explorer to manually copy:\n\n"
+            "• Folder: {path}\n"
+            "• Docker volumes (open-webui-data)"
+        ),
+
+        # TTS WIDGET EXTRA
+        "tts_ready_detail": "TTS ready.\nVoices: {voices}",
+        "tts_no_voices_warning": (
+            "⚠️ WARNING: Speech synthesis will NOT work!\n\n"
+            "You need to download at least one Italian voice.\n"
+            "Use the 'Download' buttons below."
+        ),
+        "tts_piper_not_installed": "Piper TTS not installed.\nClick 'Download All' to install.",
+        "tts_error_generic": "Error: {error}",
+        "tts_error_http": "HTTP Error: {code}",
+        "tts_test_success": (
+            "✓ Test complete!\n"
+            "Voice: {voice}\n"
+            "Size: {size} KB\n"
+            "Time: {time} ms\n"
+            "Offline: {offline}"
+        ),
+        "tts_test_error": "✗ Error: {error}",
+        "tts_test_ensure_active": "Make sure the TTS service is active.",
+        "tts_audio_playing": "▶ Audio playing...",
+        "tts_audio_downloading": "⏳ Downloading audio...",
+        "tts_audio_system_player": "▶ Audio opened in system player",
+        "tts_playback_complete": "✓ Playback complete",
+        "tts_player_error": "✗ Player error: {error}",
+        "tts_audio_download_error": "✗ Audio download error: {code}",
+        "tts_playback_error": "✗ Playback error: {error}",
+        "tts_player_open_error": "✗ Player open error: {error}",
+        "tts_unknown_error": "Unknown error",
+        "tts_docker_not_found": "Docker configuration file (docker-compose.yml) not found",
+        "tts_apply_confirm": "Do you want to modify docker-compose.yml to use local Italian voices?\n\nA backup of the original file will be created.",
+        "tts_apply_success": "docker-compose.yml updated!\n\nRestart Open WebUI with:\ndocker compose down && docker compose up -d",
+        "yes_offline": "YES",
+        "no_offline": "NO",
+
+        # ARCHIVIO EXTRA
+        "archive_step1_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #27ae60; margin: 2px 0;'>"
+            "<b style='color: #27ae60;'>1.</b> <b>Choose the folder</b><br>"
+            "Navigate and click ⭐ on the desired folder</div>"
+        ),
+        "archive_step2_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #f39c12; margin: 2px 0;'>"
+            "<b style='color: #f39c12;'>2.</b> <b>Copy to configuration file</b></div>"
+        ),
+        "archive_step3_html": (
+            "<div style='background: #fff; padding: 8px; border-left: 3px solid #3498db; margin: 2px 0;'>"
+            "<b style='color: #3498db;'>3.</b> <b>Restart Docker</b><br>"
+            "Done! The ⭐ files will be visible in Open WebUI</div>"
+        ),
+        "archive_volume_placeholder": "- /path/to/folder:/app/backend/data/uploads",
+        "archive_folder_missing_tooltip": "Folder not found on disk",
+        "archive_exported": "✓ Exported: {filename}",
+        "archive_type": "Type: {mime}",
+        "archive_base64_length": "Base64 length: {length} characters",
+        "archive_compatible_chat": "Chat compatible: {compat}",
+        "archive_compatible_yes": "YES",
+        "archive_compatible_no": "NO (too large for chat)",
+        "archive_export_error": "✗ Error: {error}",
+
+        # LOGS EXTRA
+        "loading_realtime_logs": "Loading real-time logs...",
+        "no_log_entries": "(no logs)",
+        "log_error": "Error: {error}",
     }
 }
 

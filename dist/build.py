@@ -213,6 +213,7 @@ def build_windows():
     icon_dir_str = str(PROJECT_ROOT / "ICONA").replace("\\", "\\\\")
     tools_dir_str = str(PROJECT_ROOT / "Tools OWUI").replace("\\", "\\\\")
     scripts_dir_str = str(PROJECT_ROOT / "scripts").replace("\\", "\\\\")
+    fonts_dir_str = str(PROJECT_ROOT / "fonts").replace("\\", "\\\\")
     compose_str = str(PROJECT_ROOT / "docker-compose.yml").replace("\\", "\\\\")
     icon_ico_str = str(ICON_ICO).replace("\\", "\\\\")
 
@@ -228,6 +229,7 @@ a = Analysis(
         (r'{icon_dir_str}', 'ICONA'),
         (r'{tools_dir_str}', 'Tools OWUI'),
         (r'{scripts_dir_str}', 'scripts'),
+        (r'{fonts_dir_str}', 'fonts'),
         (r'{compose_str}', '.'),
     ],
     hiddenimports=['PyQt5.sip'],
@@ -304,6 +306,7 @@ def build_linux():
         --add-data="{PROJECT_ROOT / 'ICONA'}:ICONA" \
         --add-data="{PROJECT_ROOT / 'Tools OWUI'}:Tools OWUI" \
         --add-data="{PROJECT_ROOT / 'scripts'}:scripts" \
+        --add-data="{PROJECT_ROOT / 'fonts'}:fonts" \
         --add-data="{PROJECT_ROOT / 'docker-compose.yml'}:." \
         --add-data="{PROJECT_ROOT / 'security.py'}:." \
         --hidden-import=PyQt5.sip \
@@ -444,6 +447,7 @@ def build_bat_portable():
         ("run_gui_lite.bat", None),
         ("ICONA", None),
         ("ui", None),
+        ("fonts", None),
         ("Tools OWUI", None),
         ("scripts", None),
         ("image_analysis", None),
