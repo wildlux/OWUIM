@@ -113,6 +113,14 @@ echo -e "      ${GREEN}[OK]${NC} Container avviato"
 echo ""
 echo -e "${BOLD}[4/7] Avvio servizi ausiliari...${NC}"
 
+# Cerca il Python del venv del progetto
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+if [ -f "$PROJECT_ROOT/venv/bin/python" ]; then
+    VENV_PYTHON="$PROJECT_ROOT/venv/bin/python"
+else
+    VENV_PYTHON="python3"
+fi
+
 # Funzione per avviare un servizio Python in background
 start_service() {
     local name=$1
@@ -133,10 +141,10 @@ start_service() {
         return 1
     fi
 
-    # Avvia il servizio
+    # Avvia il servizio con il Python del venv
     echo -n "      Avvio ${name}..."
     cd "${SCRIPT_DIR}/${dir}"
-    nohup python3 "${script}" > "${logfile}" 2>&1 &
+    nohup "$VENV_PYTHON" "${script}" > "${logfile}" 2>&1 &
     local pid=$!
     cd "$SCRIPT_DIR"
 

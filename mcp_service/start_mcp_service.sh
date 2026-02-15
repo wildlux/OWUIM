@@ -35,8 +35,16 @@ install_if_missing() {
     fi
 }
 
-# Trova Python
-if command_exists python3; then
+# Cerca venv del progetto
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$PROJECT_ROOT/venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/venv/bin/python"
+    echo -e "${GREEN}[OK] Ambiente virtuale trovato${NC}"
+elif [ -f "venv/bin/activate" ]; then
+    echo "[*] Attivazione ambiente virtuale..."
+    source venv/bin/activate
+    PYTHON="python3"
+elif command_exists python3; then
     PYTHON="python3"
 elif command_exists python; then
     PYTHON="python"
@@ -46,12 +54,6 @@ else
 fi
 
 echo "[*] Usando: $($PYTHON --version)"
-
-# Attiva venv se esiste
-if [ -f "venv/bin/activate" ]; then
-    echo "[*] Attivazione ambiente virtuale..."
-    source venv/bin/activate
-fi
 
 # Verifica dipendenze base
 echo "[*] Verifica dipendenze..."

@@ -26,7 +26,10 @@ try:
 except ImportError:
     def get_text(key, lang="it", **kwargs): return key
 
-from config import IS_WINDOWS, IS_MAC, SCRIPT_DIR, URL_TTS, URL_TTS_DOCKER, URL_OPENEDAI_SPEECH_DOCKER
+from config import (
+    IS_WINDOWS, IS_MAC, SCRIPT_DIR, URL_TTS, URL_TTS_DOCKER,
+    URL_OPENEDAI_SPEECH_DOCKER, PYTHON_EXE, TTS_SCRIPT, PORT_TTS,
+)
 from ui.components import ModernButton
 
 logger = logging.getLogger(__name__)
@@ -462,13 +465,13 @@ class TTSWidget(QWidget):
 
             if IS_WINDOWS:
                 subprocess.Popen(
-                    ['cmd', '/c', 'start', 'Download Voci', 'python', str(script_path)],
-                    cwd=SCRIPT_DIR
+                    ['cmd', '/c', 'start', 'Download Voci', PYTHON_EXE, str(script_path)],
+                    cwd=str(SCRIPT_DIR)
                 )
             else:
                 subprocess.Popen(
-                    ['x-terminal-emulator', '-e', 'python3', str(script_path)],
-                    cwd=SCRIPT_DIR
+                    ['x-terminal-emulator', '-e', PYTHON_EXE, str(script_path)],
+                    cwd=str(SCRIPT_DIR)
                 )
 
             # Refresh dopo un po'
@@ -488,12 +491,17 @@ class TTSWidget(QWidget):
         """Ferma il servizio TTS locale (porta 5556) per liberare memoria."""
         try:
             if IS_WINDOWS:
-                subprocess.run(['taskkill', '/f', '/im', 'python.exe'],
-                               capture_output=True, timeout=5)
+                # Termina solo il processo sulla porta TTS, non tutti i Python
+                subprocess.run(
+                    ["powershell", "-Command",
+                     f"Get-NetTCPConnection -LocalPort {PORT_TTS} -ErrorAction SilentlyContinue | "
+                     f"ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force }}"],
+                    capture_output=True, timeout=5
+                )
             else:
-                # Trova e termina il processo sulla porta 5556
+                # Trova e termina il processo sulla porta TTS
                 result = subprocess.run(
-                    ['lsof', '-t', '-i:5556'],
+                    ['lsof', '-t', f'-i:{PORT_TTS}'],
                     capture_output=True, text=True, timeout=5
                 )
                 if result.stdout.strip():
@@ -509,13 +517,13 @@ class TTSWidget(QWidget):
         """Avvia servizio TTS locale."""
         if IS_WINDOWS:
             subprocess.Popen(
-                ['cmd', '/c', 'start', 'TTS Local', 'python', 'tts_service/tts_local.py'],
-                cwd=SCRIPT_DIR
+                ['cmd', '/c', 'start', 'TTS Local', PYTHON_EXE, str(TTS_SCRIPT)],
+                cwd=str(SCRIPT_DIR)
             )
         else:
             subprocess.Popen(
-                ['python3', 'tts_service/tts_local.py'],
-                cwd=SCRIPT_DIR,
+                [PYTHON_EXE, str(TTS_SCRIPT)],
+                cwd=str(SCRIPT_DIR),
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )

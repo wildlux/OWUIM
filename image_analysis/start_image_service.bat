@@ -13,21 +13,22 @@ echo.
 REM Vai alla cartella parent per usare il venv
 cd ..
 
-REM Attiva venv se esiste
-if exist "venv\Scripts\activate.bat" (
-    call venv\Scripts\activate.bat
-    echo [OK] Ambiente virtuale attivato
+REM Cerca venv del progetto
+if exist "venv\Scripts\python.exe" (
+    set "PYTHON=venv\Scripts\python.exe"
+    echo [OK] Ambiente virtuale trovato
 ) else (
+    set "PYTHON=python"
     echo [!] Ambiente virtuale non trovato, uso Python di sistema
 )
 
 REM Verifica dipendenze
 echo.
 echo [*] Verifica dipendenze...
-python -c "import fastapi, uvicorn, PIL, requests" 2>nul
+%PYTHON% -c "import fastapi, uvicorn, PIL, requests" 2>nul
 if errorlevel 1 (
     echo [!] Dipendenze mancanti. Installazione...
-    pip install fastapi uvicorn Pillow requests python-multipart
+    %PYTHON% -m pip install fastapi uvicorn Pillow requests python-multipart
 )
 
 REM Verifica Ollama
@@ -67,6 +68,6 @@ echo ======================================================================
 echo.
 
 REM Avvia il servizio
-python image_analysis\image_service.py
+%PYTHON% image_analysis\image_service.py
 
 pause

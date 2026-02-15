@@ -24,7 +24,7 @@ from PyQt5.QtGui import QIcon, QFont, QFontDatabase, QPixmap, QColor, QKeySequen
 
 from config import (
     IS_WINDOWS, IS_MAC, SCRIPT_DIR, DOCKER_COMPOSE,
-    URL_WEBUI, APP_NAME, APP_VERSION,
+    URL_WEBUI, APP_NAME, APP_VERSION, ensure_env_file,
 )
 
 # Import condizionali
@@ -54,6 +54,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        # Genera .env con WEBUI_SECRET_KEY se mancante (serve prima di docker compose)
+        ensure_env_file()
         self._load_bundled_fonts()
         self.setWindowTitle(APP_NAME)
         self.setMinimumSize(1000, 750)

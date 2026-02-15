@@ -1,24 +1,90 @@
 @echo off
 setlocal enabledelayedexpansion
+chcp 65001 >nul 2>&1
 title Open WebUI Manager
 
 set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 cd /d "%SCRIPT_DIR%"
 
 REM ======================================================================
 REM  Open WebUI Manager - GUI + Image Analysis
 REM ======================================================================
 
-REM Verifica se esiste l'ambiente virtuale
-if not exist "venv\Scripts\activate.bat" (
-    echo [X] Ambiente virtuale non trovato!
-    echo     Esegui prima: scripts\setup_env.bat
-    pause
-    exit /b 1
+REM --- Trova Python ---
+set "PYTHON_CMD="
+
+where python >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    set "PYTHON_CMD=python"
+    goto :python_found
+)
+
+where python3 >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    set "PYTHON_CMD=python3"
+    goto :python_found
+)
+
+where py >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    set "PYTHON_CMD=py -3"
+    goto :python_found
+)
+
+echo  [ERRORE] Python non trovato!
+echo.
+echo  Installa Python 3.8+ da: https://www.python.org/downloads/
+echo  IMPORTANTE: seleziona "Add Python to PATH"
+echo.
+pause
+exit /b 1
+
+:python_found
+
+REM --- Verifica/crea ambiente virtuale ---
+if not exist "%SCRIPT_DIR%\venv\Scripts\python.exe" (
+    echo.
+    echo  [*] Creazione ambiente virtuale...
+    echo      Questa operazione viene eseguita solo la prima volta.
+    echo.
+    %PYTHON_CMD% -m venv "%SCRIPT_DIR%\venv"
+    if %ERRORLEVEL% neq 0 (
+        echo  [ERRORE] Impossibile creare l'ambiente virtuale.
+        echo  Prova: %PYTHON_CMD% -m pip install virtualenv
+        echo.
+        pause
+        exit /b 1
+    )
+    echo  [OK] Ambiente virtuale creato
+    echo.
+
+    "%SCRIPT_DIR%\venv\Scripts\pip.exe" install --upgrade pip >nul 2>&1
+
+    echo  [*] Installazione dipendenze...
+    if exist "%SCRIPT_DIR%\packages" (
+        echo      Installazione da pacchetti locali...
+        "%SCRIPT_DIR%\venv\Scripts\pip.exe" install --no-index --find-links="%SCRIPT_DIR%\packages" -r "%SCRIPT_DIR%\requirements.txt" >nul 2>&1
+        if %ERRORLEVEL% neq 0 (
+            echo      Alcuni pacchetti mancanti, scaricamento da internet...
+            "%SCRIPT_DIR%\venv\Scripts\pip.exe" install --find-links="%SCRIPT_DIR%\packages" -r "%SCRIPT_DIR%\requirements.txt"
+        ) else (
+            echo  [OK] Dipendenze installate (offline)
+        )
+    ) else (
+        echo      Scaricamento da internet...
+        "%SCRIPT_DIR%\venv\Scripts\pip.exe" install -r "%SCRIPT_DIR%\requirements.txt"
+    )
+    echo.
+) else (
+    echo  [OK] Ambiente virtuale presente
 )
 
 REM Attiva venv
-call venv\Scripts\activate.bat
+call "%SCRIPT_DIR%\venv\Scripts\activate.bat"
+
+REM Usa il Python del venv per tutti i comandi
+set "VENV_PYTHON=%SCRIPT_DIR%\venv\Scripts\python.exe"
 
 REM Se passato un file/cartella come argomento, analizzalo
 if not "%~1"=="" (
@@ -37,7 +103,7 @@ if not "%~1"=="" (
         for %%f in ("%~1\*.png" "%~1\*.jpg" "%~1\*.jpeg" "%~1\*.svg" "%~1\*.webp") do (
             if exist "%%f" (
                 echo Elaborazione: %%~nxf
-                python image_analysis\image_converter.py "%%f" -f base64
+                "%VENV_PYTHON%" image_analysis\image_converter.py "%%f" -f base64
                 echo.
             )
         )
@@ -46,7 +112,7 @@ if not "%~1"=="" (
     ) else (
         echo [*] File: %~1
         echo.
-        python image_analysis\image_converter.py "%~1" -f base64
+        "%VENV_PYTHON%" image_analysis\image_converter.py "%~1" -f base64
     )
     echo.
     pause
@@ -90,7 +156,7 @@ goto menu
 :start_gui
 echo.
 echo [*] Avvio GUI Manager...
-python openwebui_gui.py
+"%VENV_PYTHON%" openwebui_gui.py
 goto menu
 
 :start_image_service
@@ -99,7 +165,7 @@ echo [*] Avvio Image Analysis Service...
 echo [*] Porta: 5555
 echo [*] Premi Ctrl+C per fermare
 echo.
-python image_analysis\image_service.py
+"%VENV_PYTHON%" image_analysis\image_service.py
 pause
 goto menu
 
@@ -109,7 +175,7 @@ echo [*] Avvio TTS Locale (Piper - voci italiane offline)...
 echo [*] Porta: 5556
 echo [*] Premi Ctrl+C per fermare
 echo.
-python tts_service\tts_local.py
+"%VENV_PYTHON%" tts_service\tts_local.py
 pause
 goto menu
 
@@ -119,7 +185,7 @@ set /p filepath="Percorso immagine (trascina qui): "
 if "%filepath%"=="" goto menu
 set filepath=%filepath:"=%
 echo.
-python image_analysis\image_converter.py "%filepath%" -f base64
+"%VENV_PYTHON%" image_analysis\image_converter.py "%filepath%" -f base64
 echo.
 pause
 goto menu
@@ -135,7 +201,7 @@ echo.
 for %%f in ("%folder%\*.png" "%folder%\*.jpg" "%folder%\*.jpeg" "%folder%\*.svg") do (
     if exist "%%f" (
         echo Elaborazione: %%~nxf
-        python image_analysis\image_converter.py "%%f" -f base64
+        "%VENV_PYTHON%" image_analysis\image_converter.py "%%f" -f base64
         echo.
     )
 )
@@ -147,15 +213,15 @@ goto menu
 :start_all
 echo.
 echo [*] Avvio Image Analysis Service in background...
-start "Image Service" cmd /c "python image_analysis\image_service.py"
+start "Image Service" cmd /c ""%VENV_PYTHON%" image_analysis\image_service.py"
 timeout /t 2 >nul
 echo [OK] Image Service avviato su http://localhost:5555
 echo.
 echo [*] Avvio TTS Service in background...
-start "TTS Service" cmd /c "python tts_service\tts_local.py"
+start "TTS Service" cmd /c ""%VENV_PYTHON%" tts_service\tts_local.py"
 timeout /t 2 >nul
 echo [OK] TTS Service avviato su http://localhost:5556
 echo.
 echo [*] Avvio GUI Manager...
-python openwebui_gui.py
+"%VENV_PYTHON%" openwebui_gui.py
 goto menu

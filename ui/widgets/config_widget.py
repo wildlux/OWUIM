@@ -23,7 +23,7 @@ try:
 except ImportError:
     HAS_QRCODE = False
 
-from config import IS_WINDOWS, IS_MAC, SCRIPT_DIR, SCRIPTS_DIR, DOCKER_COMPOSE, PORT_WEBUI
+from config import IS_WINDOWS, IS_MAC, IS_LINUX, SCRIPT_DIR, SCRIPTS_DIR, DOCKER_COMPOSE, PORT_WEBUI, PYTHON_EXE
 from ui.components import ModernButton
 
 try:
@@ -145,13 +145,18 @@ class ConfigWidget(QWidget):
 
         self._btn_update_ollama = ModernButton(t("update_ollama_button"), "purple")
         self._btn_update_ollama.setToolTip(t("update_ollama_tooltip"))
-        self._btn_update_ollama.clicked.connect(lambda: webbrowser.open("https://ollama.com/download"))
+        self._btn_update_ollama.clicked.connect(self.update_ollama)
         maint_layout.addWidget(self._btn_update_ollama)
 
         self._btn_update_docker = ModernButton(t("update_docker_button"), "gray")
         self._btn_update_docker.setToolTip(t("update_docker_tooltip"))
-        self._btn_update_docker.clicked.connect(lambda: webbrowser.open("https://docs.docker.com/get-docker/"))
+        self._btn_update_docker.clicked.connect(self.update_docker)
         maint_layout.addWidget(self._btn_update_docker)
+
+        self._btn_update_deps = ModernButton(t("update_deps_button"), "green")
+        self._btn_update_deps.setToolTip(t("update_deps_tooltip"))
+        self._btn_update_deps.clicked.connect(self.update_dependencies)
+        maint_layout.addWidget(self._btn_update_deps)
 
         layout.addWidget(self._maintenance_group)
         layout.addStretch()
@@ -184,7 +189,68 @@ class ConfigWidget(QWidget):
         self._btn_update_ollama.setToolTip(t("update_ollama_tooltip"))
         self._btn_update_docker.setText(t("update_docker_button"))
         self._btn_update_docker.setToolTip(t("update_docker_tooltip"))
+        self._btn_update_deps.setText(t("update_deps_button"))
+        self._btn_update_deps.setToolTip(t("update_deps_tooltip"))
         self._lan_instructions.setText(t("lan_instructions"))
+
+    def update_ollama(self):
+        """Aggiorna Ollama: su Linux esegue lo script ufficiale, su Windows apre il browser."""
+        lang = self._get_lang()
+        if IS_LINUX:
+            reply = QMessageBox.question(
+                self, get_text("confirm", lang),
+                get_text("update_ollama_confirm", lang),
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.main_window.run_command(
+                    "curl -fsSL https://ollama.com/install.sh | sh",
+                    get_text("updating_ollama", lang)
+                )
+        else:
+            webbrowser.open("https://ollama.com/download")
+
+    def update_docker(self):
+        """Aggiorna Docker: su Linux via apt, su Windows/Mac apre il browser."""
+        lang = self._get_lang()
+        if IS_LINUX:
+            reply = QMessageBox.question(
+                self, get_text("confirm", lang),
+                get_text("update_docker_confirm", lang),
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                # Apri terminale con sudo per l'aggiornamento
+                update_cmd = "sudo apt-get update && sudo apt-get install --only-upgrade -y docker-ce docker-ce-cli containerd.io"
+                for terminal in ['gnome-terminal', 'konsole', 'xfce4-terminal', 'xterm']:
+                    try:
+                        if terminal == 'gnome-terminal':
+                            subprocess.Popen(
+                                [terminal, '--', 'bash', '-c', f'{update_cmd}; echo "Premi INVIO per chiudere"; read'],
+                                cwd=str(SCRIPT_DIR)
+                            )
+                        else:
+                            subprocess.Popen(
+                                [terminal, '-e', f'bash -c \'{update_cmd}; echo "Premi INVIO per chiudere"; read\''],
+                                cwd=str(SCRIPT_DIR)
+                            )
+                        break
+                    except FileNotFoundError:
+                        continue
+        else:
+            webbrowser.open("https://docs.docker.com/get-docker/")
+
+    def update_dependencies(self):
+        """Aggiorna le dipendenze Python dal requirements.txt."""
+        lang = self._get_lang()
+        req_file = SCRIPT_DIR / "requirements.txt"
+        if not req_file.exists():
+            QMessageBox.warning(self, get_text("error", lang), "requirements.txt non trovato")
+            return
+        self.main_window.run_command(
+            f"{PYTHON_EXE} -m pip install --upgrade -r {req_file}",
+            get_text("updating_deps", lang)
+        )
 
     def get_local_ip(self):
         """Ottiene l'IP locale della macchina."""
@@ -451,26 +517,21 @@ class ConfigWidget(QWidget):
 
     def backup_usb(self):
         lang = self._get_lang()
-        script = SCRIPTS_DIR / "backup_to_usb.sh"
-        if IS_WINDOWS:
-            QMessageBox.information(
-                self, get_text("backup_title", lang),
-                get_text("backup_windows_msg", lang, path=str(SCRIPT_DIR))
-            )
-        elif script.exists():
-            # Apri terminale per backup interattivo
-            if IS_MAC:
-                subprocess.Popen(['open', '-a', 'Terminal', str(script)], cwd=SCRIPT_DIR)
-            else:
-                # Linux - prova vari terminali
-                for terminal in ['gnome-terminal', 'konsole', 'xfce4-terminal', 'xterm']:
-                    try:
-                        if terminal == 'gnome-terminal':
-                            subprocess.Popen([terminal, '--', 'bash', str(script)], cwd=SCRIPT_DIR)
-                        else:
-                            subprocess.Popen([terminal, '-e', f'bash {script}'], cwd=SCRIPT_DIR)
-                        break
-                    except FileNotFoundError:
-                        continue
-        else:
+        build_script = SCRIPT_DIR / "dist" / "build.py"
+        if not build_script.exists():
             QMessageBox.warning(self, get_text("error", lang), get_text("script_not_found", lang))
+            return
+        cmd = f'"{PYTHON_EXE}" "{build_script}" bat'
+        if IS_WINDOWS:
+            subprocess.Popen(f'start cmd /k {cmd}', shell=True, cwd=SCRIPT_DIR)
+        else:
+            # Linux/macOS - apri terminale con build
+            for terminal in ['gnome-terminal', 'konsole', 'xfce4-terminal', 'xterm']:
+                try:
+                    if terminal == 'gnome-terminal':
+                        subprocess.Popen([terminal, '--', 'bash', '-c', f'{cmd}; echo; read -p "Premi INVIO per chiudere..."'], cwd=SCRIPT_DIR)
+                    else:
+                        subprocess.Popen([terminal, '-e', f'bash -c \'{cmd}; echo; read -p "Premi INVIO per chiudere..."\''], cwd=SCRIPT_DIR)
+                    break
+                except FileNotFoundError:
+                    continue

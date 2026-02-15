@@ -334,9 +334,9 @@ Ora puoi:
 
 2. Usarlo in Open WebUI aggiungendo al docker-compose.yml:
    AUDIO_TTS_ENGINE=openai
-   AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:5556/v1
+   AUDIO_TTS_OPENAI_API_BASE_URL=http://host.docker.internal:8000/v1
    AUDIO_TTS_OPENAI_API_KEY=sk-local
-   AUDIO_TTS_VOICE=paola
+   AUDIO_TTS_VOICE=alloy
     """)
 
     input("\nPremi INVIO per uscire...")

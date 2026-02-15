@@ -6,6 +6,7 @@ Principi applicati:
 - Programmazione difensiva: Eccezioni specifiche, no bare except
 """
 
+import socket
 import subprocess
 import time
 import shutil
@@ -17,6 +18,7 @@ from config import (
     IS_WINDOWS, SCRIPT_DIR, DOCKER_COMPOSE,
     URL_WEBUI, URL_OLLAMA, URL_TTS,
     PORT_WEBUI, PORT_OLLAMA,
+    VENV_DIR, ensure_venv, ensure_env_file,
 )
 
 try:
@@ -41,6 +43,16 @@ class StartupThread(QThread):
 
     def run(self):
         try:
+            # [0/5] Verifica ambiente Python (venv)
+            self.progress_signal.emit(self._t("startup_checking_venv"), 3)
+            venv_python = VENV_DIR / ("Scripts/python.exe" if IS_WINDOWS else "bin/python")
+            if not venv_python.exists():
+                self.progress_signal.emit(self._t("startup_creating_venv"), 5)
+                ensure_venv()
+
+            # Genera .env con WEBUI_SECRET_KEY se mancante
+            ensure_env_file()
+
             # [1/5] Verifica Docker
             self.progress_signal.emit(self._t("startup_checking_docker"), 10)
             if not self._check_docker():

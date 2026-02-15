@@ -15,18 +15,27 @@ echo ""
 # Vai alla cartella del servizio
 cd "$SCRIPT_DIR"
 
-# Verifica dipendenze con Python di sistema
+# Cerca venv del progetto padre
+if [ -f "$PARENT_DIR/venv/bin/python" ]; then
+    PYTHON="$PARENT_DIR/venv/bin/python"
+    echo "[OK] Ambiente virtuale trovato: $PYTHON"
+else
+    PYTHON="python3"
+    echo "[!] Ambiente virtuale non trovato, uso Python di sistema"
+fi
+
+# Verifica dipendenze
 echo "[*] Verifica dipendenze..."
 MISSING=""
-python3 -c "import fastapi" 2>/dev/null || MISSING="$MISSING fastapi"
-python3 -c "import uvicorn" 2>/dev/null || MISSING="$MISSING uvicorn"
-python3 -c "import PIL" 2>/dev/null || MISSING="$MISSING Pillow"
-python3 -c "import requests" 2>/dev/null || MISSING="$MISSING requests"
+"$PYTHON" -c "import fastapi" 2>/dev/null || MISSING="$MISSING fastapi"
+"$PYTHON" -c "import uvicorn" 2>/dev/null || MISSING="$MISSING uvicorn"
+"$PYTHON" -c "import PIL" 2>/dev/null || MISSING="$MISSING Pillow"
+"$PYTHON" -c "import requests" 2>/dev/null || MISSING="$MISSING requests"
 
 if [ -n "$MISSING" ]; then
     echo "[!] Dipendenze mancanti:$MISSING"
     echo "[*] Installazione..."
-    pip3 install --user fastapi uvicorn Pillow requests python-multipart
+    "$PYTHON" -m pip install fastapi uvicorn Pillow requests python-multipart
     echo ""
 fi
 echo "[OK] Dipendenze OK"
@@ -65,4 +74,4 @@ echo "======================================================================"
 echo ""
 
 # Avvia il servizio
-python3 image_service.py
+"$PYTHON" image_service.py

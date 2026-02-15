@@ -8,30 +8,36 @@ echo          TTS SERVICE - Sintesi Vocale Italiana
 echo ======================================================================
 echo.
 
-REM Attiva venv se esiste
-if exist "venv\Scripts\activate.bat" (
+REM Cerca venv del progetto padre
+set "PROJECT_ROOT=%~dp0\.."
+if exist "%PROJECT_ROOT%\venv\Scripts\python.exe" (
+    set "PYTHON=%PROJECT_ROOT%\venv\Scripts\python.exe"
+    echo [OK] Ambiente virtuale trovato
+) else if exist "venv\Scripts\activate.bat" (
     call venv\Scripts\activate.bat
+    set "PYTHON=python"
     echo [OK] Ambiente virtuale attivato
 ) else (
+    set "PYTHON=python"
     echo [!] Ambiente virtuale non trovato, uso Python di sistema
 )
 
 REM Verifica dipendenze
 echo.
 echo [*] Verifica dipendenze...
-python -c "import fastapi, uvicorn, requests" 2>nul
+%PYTHON% -c "import fastapi, uvicorn, requests" 2>nul
 if errorlevel 1 (
     echo [!] Dipendenze base mancanti. Installazione...
-    pip install fastapi uvicorn requests
+    %PYTHON% -m pip install fastapi uvicorn requests
 )
 
 REM Verifica edge-tts (backend principale)
-python -c "import edge_tts" 2>nul
+%PYTHON% -c "import edge_tts" 2>nul
 if errorlevel 1 (
     echo [!] edge-tts non installato (consigliato per migliore qualita')
     set /p install="Vuoi installarlo ora? [S/n]: "
     if /i not "!install!"=="n" (
-        pip install edge-tts
+        %PYTHON% -m pip install edge-tts
     )
 )
 
@@ -49,6 +55,6 @@ echo  Premi Ctrl+C per fermare
 echo ======================================================================
 echo.
 
-python tts_service\tts_local.py
+%PYTHON% tts_service\tts_local.py
 
 pause

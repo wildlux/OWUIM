@@ -27,7 +27,8 @@ Schermata_*.png
 corretta.png
 
 # Build artifacts
-dist/
+dist/*
+!dist/build.py
 *.exe
 
 # Cache

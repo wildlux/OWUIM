@@ -13,15 +13,45 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Funzione per attivare venv
+# Funzione per creare/attivare venv
 activate_venv() {
     if [ -f "venv/bin/activate" ]; then
         source venv/bin/activate
         return 0
     else
         echo -e "${YELLOW}[!] Ambiente virtuale non trovato${NC}"
-        echo "Esegui: ./scripts/setup_env.sh"
-        return 1
+        echo -e "${BLUE}[*] Creazione ambiente virtuale...${NC}"
+        echo "    Questa operazione viene eseguita solo la prima volta."
+        echo ""
+
+        python3 -m venv "$SCRIPT_DIR/venv"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}[X] Impossibile creare l'ambiente virtuale.${NC}"
+            echo "Prova: sudo apt install python3-venv"
+            return 1
+        fi
+        echo -e "${GREEN}[OK] Ambiente virtuale creato${NC}"
+
+        "$SCRIPT_DIR/venv/bin/pip" install --upgrade pip > /dev/null 2>&1
+
+        echo -e "${BLUE}[*] Installazione dipendenze...${NC}"
+        if [ -d "$SCRIPT_DIR/packages" ]; then
+            echo "    Installazione da pacchetti locali..."
+            "$SCRIPT_DIR/venv/bin/pip" install --no-index --find-links="$SCRIPT_DIR/packages" -r "$SCRIPT_DIR/requirements.txt" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo "    Alcuni pacchetti mancanti, scaricamento da internet..."
+                "$SCRIPT_DIR/venv/bin/pip" install --find-links="$SCRIPT_DIR/packages" -r "$SCRIPT_DIR/requirements.txt"
+            else
+                echo -e "${GREEN}[OK] Dipendenze installate (offline)${NC}"
+            fi
+        else
+            echo "    Scaricamento da internet..."
+            "$SCRIPT_DIR/venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
+        fi
+        echo ""
+
+        source venv/bin/activate
+        return 0
     fi
 }
 
@@ -65,9 +95,15 @@ while true; do
             python3 openwebui_gui.py
             ;;
         2)
+            # Usa il Python del venv per i servizi
+            VENV_PYTHON="$SCRIPT_DIR/venv/bin/python"
+            if [ ! -f "$VENV_PYTHON" ]; then
+                VENV_PYTHON="python3"
+            fi
+
             echo ""
             echo -e "${BLUE}[*] Avvio Image Analysis Service in background...${NC}"
-            python3 image_analysis/image_service.py &
+            "$VENV_PYTHON" "$SCRIPT_DIR/image_analysis/image_service.py" &
             IMAGE_SERVICE_PID=$!
             sleep 2
             echo -e "${GREEN}[OK] Image Service avviato (PID: $IMAGE_SERVICE_PID)${NC}"
@@ -75,7 +111,7 @@ while true; do
 
             echo ""
             echo -e "${BLUE}[*] Avvio TTS Service in background...${NC}"
-            python3 tts_service/tts_local.py &
+            "$VENV_PYTHON" "$SCRIPT_DIR/tts_service/tts_local.py" &
             TTS_SERVICE_PID=$!
             sleep 2
             echo -e "${GREEN}[OK] TTS Service avviato (PID: $TTS_SERVICE_PID)${NC}"
@@ -83,7 +119,7 @@ while true; do
 
             echo ""
             echo -e "${BLUE}[*] Avvio GUI Manager...${NC}"
-            python3 openwebui_gui.py
+            "$VENV_PYTHON" "$SCRIPT_DIR/openwebui_gui.py"
 
             # Ferma i servizi quando la GUI si chiude
             echo ""

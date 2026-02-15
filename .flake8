@@ -1,0 +1,21 @@
+[flake8]
+max-line-length = 120
+# E501: line too long (gestito da max-line-length)
+# W503/W504: line break before/after binary operator (conflitto PEP8)
+# E402: module level import not at top (pattern try/except per import opzionali)
+# F401: imported but unused (pattern try/except per dipendenze opzionali)
+# E722: bare except (usato per import opzionali)
+# E226: missing whitespace around arithmetic operator
+# E128: continuation line under-indented
+# E306: expected blank line before nested definition
+# F841: local variable assigned but never used
+# F541: f-string without placeholders
+ignore = E501,W503,W504,E402,F401,E722,E226,E128,E306,F841,F541
+exclude =
+    .git,
+    __pycache__,
+    dist,
+    venv,
+    .venv,
+    node_modules,
+    *.egg-info

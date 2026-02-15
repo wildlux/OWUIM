@@ -25,16 +25,24 @@ REM Verifica Python
 REM ----------------------------------------------------------------------------
 echo [*] Verifica Python...
 
-where python >nul 2>&1
-if errorlevel 1 (
-    echo [X] Python non trovato!
-    echo     Scarica da: https://www.python.org/downloads/
-    echo     Assicurati di selezionare "Add Python to PATH" durante l'installazione
-    pause
-    exit /b 1
+REM Cerca venv del progetto padre
+set "PROJECT_ROOT=%~dp0\.."
+if exist "%PROJECT_ROOT%\venv\Scripts\python.exe" (
+    set "PYTHON=%PROJECT_ROOT%\venv\Scripts\python.exe"
+    echo [OK] Ambiente virtuale trovato
+) else (
+    where python >nul 2>&1
+    if errorlevel 1 (
+        echo [X] Python non trovato!
+        echo     Scarica da: https://www.python.org/downloads/
+        echo     Assicurati di selezionare "Add Python to PATH" durante l'installazione
+        pause
+        exit /b 1
+    )
+    set "PYTHON=python"
 )
 
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
+for /f "tokens=2" %%i in ('%PYTHON% --version 2^>^&1') do set PYTHON_VERSION=%%i
 echo [OK] Python %PYTHON_VERSION%
 
 REM ----------------------------------------------------------------------------
@@ -103,7 +111,7 @@ echo [*] Documentazione: http://localhost:5557/docs
 echo [*] Premi Ctrl+C per fermare
 echo.
 
-python document_service.py
+%PYTHON% document_service.py
 
 pause
 exit /b 0
@@ -112,9 +120,9 @@ REM ----------------------------------------------------------------------------
 REM Funzione: Installa pacchetto se non presente
 REM ----------------------------------------------------------------------------
 :install_if_missing
-python -c "import %~1" 2>nul
+%PYTHON% -c "import %~1" 2>nul
 if errorlevel 1 (
     echo [!] Installazione %~2...
-    pip install --quiet %~2
+    %PYTHON% -m pip install --quiet %~2
 )
 exit /b 0

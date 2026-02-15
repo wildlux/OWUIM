@@ -12,28 +12,34 @@ echo "         TTS SERVICE - Sintesi Vocale Italiana"
 echo "======================================================================"
 echo ""
 
-# Attiva venv se esiste
-if [ -f "venv/bin/activate" ]; then
+# Cerca venv del progetto
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$PROJECT_ROOT/venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/venv/bin/python"
+    echo "[OK] Ambiente virtuale trovato: $PYTHON"
+elif [ -f "venv/bin/activate" ]; then
     source venv/bin/activate
+    PYTHON="python3"
     echo "[OK] Ambiente virtuale attivato"
 else
+    PYTHON="python3"
     echo "[!] Ambiente virtuale non trovato, uso Python di sistema"
 fi
 
 # Verifica dipendenze
 echo ""
 echo "[*] Verifica dipendenze..."
-if ! python3 -c "import fastapi, uvicorn, requests" 2>/dev/null; then
+if ! "$PYTHON" -c "import fastapi, uvicorn, requests" 2>/dev/null; then
     echo "[!] Dipendenze base mancanti. Installazione..."
-    pip3 install fastapi uvicorn requests
+    "$PYTHON" -m pip install fastapi uvicorn requests
 fi
 
 # Verifica edge-tts
-if ! python3 -c "import edge_tts" 2>/dev/null; then
+if ! "$PYTHON" -c "import edge_tts" 2>/dev/null; then
     echo "[!] edge-tts non installato (consigliato per migliore qualità)"
     read -p "Vuoi installarlo ora? [S/n]: " install
     if [[ ! "$install" =~ ^[Nn]$ ]]; then
-        pip3 install edge-tts
+        "$PYTHON" -m pip install edge-tts
     fi
 fi
 
@@ -51,4 +57,4 @@ echo "  Premi Ctrl+C per fermare"
 echo "======================================================================"
 echo ""
 
-python3 tts_service/tts_service.py
+"$PYTHON" tts_service/tts_local.py

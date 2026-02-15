@@ -24,6 +24,7 @@ except ImportError:
 from config import (
     IS_WINDOWS, SCRIPT_DIR, URL_MCP, URL_TTS, URL_IMAGE, URL_DOCUMENT,
     PORT_TTS, PORT_IMAGE, PORT_DOCUMENT, PORT_MCP, SERVICES,
+    PYTHON_EXE, TTS_SCRIPT, IMAGE_SCRIPT, DOCUMENT_SCRIPT, MCP_SCRIPT,
 )
 from ui.components import ModernButton
 
@@ -567,44 +568,20 @@ class MCPWidget(QWidget):
     def _do_start_mcp_service(self):
         """Avvia effettivamente il servizio MCP."""
         try:
-            # Usa il venv per avere MCP SDK disponibile
-            mcp_script = SCRIPT_DIR / "mcp_service" / "mcp_service.py"
             if IS_WINDOWS:
-                python_exe = SCRIPT_DIR / "venv" / "Scripts" / "python.exe"
-                if python_exe.exists():
-                    subprocess.Popen(
-                        ["cmd", "/c", "start", "MCP Bridge", str(python_exe), str(mcp_script)],
-                        cwd=str(SCRIPT_DIR),
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                else:
-                    # Fallback allo script batch
-                    script = SCRIPT_DIR / "mcp_service" / "start_mcp_service.bat"
-                    subprocess.Popen(
-                        ["cmd", "/c", "start", "", str(script)],
-                        cwd=str(SCRIPT_DIR),
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
+                subprocess.Popen(
+                    ["cmd", "/c", "start", "MCP Bridge", PYTHON_EXE, str(MCP_SCRIPT)],
+                    cwd=str(SCRIPT_DIR),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
             else:
-                python_exe = SCRIPT_DIR / "venv" / "bin" / "python"
-                if python_exe.exists():
-                    subprocess.Popen(
-                        ["gnome-terminal", "--title=MCP Bridge", "--", str(python_exe), str(mcp_script)],
-                        cwd=str(SCRIPT_DIR),
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                else:
-                    # Fallback allo script shell
-                    script = SCRIPT_DIR / "mcp_service" / "start_mcp_service.sh"
-                    subprocess.Popen(
-                        ["gnome-terminal", "--", "bash", str(script)],
-                        cwd=str(SCRIPT_DIR),
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
+                subprocess.Popen(
+                    ["gnome-terminal", "--title=MCP Bridge", "--", PYTHON_EXE, str(MCP_SCRIPT)],
+                    cwd=str(SCRIPT_DIR),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
             self.status_label.setText(get_text("mcp_starting", self._get_lang()))
             self.status_indicator.setStyleSheet("color: #f39c12;")
 
@@ -785,18 +762,16 @@ class MCPWidget(QWidget):
             return
 
         service_scripts = {
-            "tts": ("tts_service/tts_local.py", PORT_TTS),
-            "image": ("image_analysis/image_service.py", PORT_IMAGE),
-            "document": ("document_service/document_service.py", PORT_DOCUMENT),
+            "tts": (TTS_SCRIPT, PORT_TTS),
+            "image": (IMAGE_SCRIPT, PORT_IMAGE),
+            "document": (DOCUMENT_SCRIPT, PORT_DOCUMENT),
         }
-        script, port = service_scripts.get(service_name, (None, None))
-        if not script:
+        script_path, port = service_scripts.get(service_name, (None, None))
+        if not script_path:
             return
-
-        script_path = SCRIPT_DIR / script
         if not script_path.exists():
             lang = self._get_lang()
-            QMessageBox.warning(self, get_text("error", lang), get_text("mcp_file_not_found", lang, file=script))
+            QMessageBox.warning(self, get_text("error", lang), get_text("mcp_file_not_found", lang, file=str(script_path)))
             return
 
         btn, _, _ = self._get_svc_button(service_name)
@@ -808,13 +783,13 @@ class MCPWidget(QWidget):
         try:
             if IS_WINDOWS:
                 subprocess.Popen(
-                    ['cmd', '/c', 'start', service_name, 'python', str(script_path)],
-                    cwd=SCRIPT_DIR
+                    ['cmd', '/c', 'start', service_name, PYTHON_EXE, str(script_path)],
+                    cwd=str(SCRIPT_DIR)
                 )
             else:
                 subprocess.Popen(
-                    ['python3', str(script_path)],
-                    cwd=SCRIPT_DIR,
+                    [PYTHON_EXE, str(script_path)],
+                    cwd=str(SCRIPT_DIR),
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
